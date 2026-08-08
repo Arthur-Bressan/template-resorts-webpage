@@ -70,3 +70,51 @@ Stage Summary:
 - Inline `opacity: 0` + `transform: translate(-100px)` prevents flash before GSAP init
 - Fix: moved cursor CSS out of @layer base (Tailwind CSS 4 strips/nests media queries incorrectly)
 - Fix: removed useState for enabled flag (React lint: no setState in effect)
+
+---
+Task ID: 3
+Agent: Main Orchestrator
+Task: Enhance card hover interactions with 3D tilt, glow spotlight, and fluid transitions
+
+Work Log:
+- Created `src/hooks/useCardTilt.ts` — reusable GSAP-powered 3D tilt hook
+  - perspective: 800px, preserve-3d transform
+  - Tilt proportional to mouse distance from center (max 8°)
+  - Dynamic radial-gradient glow spotlight follows cursor
+  - Elastic ease-out on mouse leave (bouncy return to 0°)
+  - Glow element injected via JS (avoids Tailwind CSS 4 @layer issues)
+  - Respects prefers-reduced-motion (bails out)
+- Rewrote `Rooms.tsx` — extracted RoomCard sub-component with useCardTilt
+  - 3D tilt + glow on hover
+  - Image skeleton: scale(1.1) + translateY(-12px) parallax shift
+  - Overlay gradient from primary-dark on hover
+  - Glass badges scale(1.05) on hover
+  - H3 color transitions to primary on hover
+  - Amenity tags stagger with 40ms delay, lift 2px + shadow
+  - CheckCircle icons scale 1.25x on hover
+  - CTA button: shimmer sweep (translate-x gradient) + arrow slides 1.5x
+- Rewrote `Experiences.tsx` — extracted ExperienceCard sub-component
+  - 3D tilt + glow on hover
+  - Image skeleton parallax shift
+  - Bottom accent line (scale-x 0→1, origin-left) on hover
+  - Number badge glow + color change to accent
+  - Difficulty text color transitions to primary
+  - Mountain icon scale 1.25x on hover
+- Rewrote `Gallery.tsx` — extracted GalleryItem sub-component
+  - 3D tilt + glow on hover
+  - Dark overlay fade on hover
+  - Expand icon reveals from center (scale 0.5→1, opacity 0→1)
+  - Border glow (white/20) on hover
+- Rewrote `Testimonials.tsx` — extracted TestimonialCard sub-component
+  - 3D tilt + glow on hover
+  - Top gradient border accent (scale-x, origin-center)
+  - Quote icon rotates 12° + scales 1.1x + color opacity change
+  - Stars stagger scale 1.1x with 60ms delay per star
+  - Avatar ring-2 + ring-offset on hover
+  - Author name color transitions to primary
+
+Stage Summary:
+- All 17 cards verified: data-card-inner + data-card-glow + perspective:800px
+- Zero console errors, clean lint
+- Consistent premium hover feel across Rooms, Experiences, Gallery, Testimonials
+- Elastic GSAP return animation creates organic "bouncy" feel on mouse leave
