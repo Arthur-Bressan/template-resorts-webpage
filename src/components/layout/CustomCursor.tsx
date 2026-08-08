@@ -77,7 +77,9 @@ export function CustomCursor() {
         label.textContent = labelText;
       }
 
-      gsap.killTweensOf([dot, halo, label]);
+      // NOTE: Do NOT use gsap.killTweensOf here — it would kill the
+      // halo x/y tweens created by gsap.quickTo(), freezing position.
+      // Instead, each gsap.to() uses overwrite: "auto" to handle conflicts.
 
       switch (type) {
         case "link":
@@ -86,6 +88,7 @@ export function CustomCursor() {
             opacity: 1,
             duration: 0.25,
             ease: "power2.out",
+            overwrite: "auto",
           });
           gsap.to(halo, {
             scale: 1.5,
@@ -94,12 +97,13 @@ export function CustomCursor() {
             borderWidth: 1.5,
             duration: 0.3,
             ease: "power2.out",
+            overwrite: "auto",
           });
-          if (label) gsap.to(label, { opacity: 0, scale: 0.8, duration: 0.15 });
+          if (label) gsap.to(label, { opacity: 0, scale: 0.8, duration: 0.15, overwrite: "auto" });
           break;
 
         case "card":
-          gsap.to(dot, { scale: 0, opacity: 0, duration: 0.2 });
+          gsap.to(dot, { scale: 0, opacity: 0, duration: 0.2, overwrite: "auto" });
           gsap.to(halo, {
             scale: 2.2,
             scaleY: 1,
@@ -107,8 +111,8 @@ export function CustomCursor() {
             borderWidth: 1,
             duration: 0.35,
             ease: "power2.out",
+            overwrite: "auto",
           });
-          // Counter-scale label so it stays readable despite halo scale
           if (label)
             gsap.to(label, {
               opacity: 1,
@@ -116,11 +120,12 @@ export function CustomCursor() {
               duration: 0.25,
               delay: 0.08,
               ease: "back.out(1.7)",
+              overwrite: "auto",
             });
           break;
 
         case "input":
-          gsap.to(dot, { scale: 0, opacity: 0, duration: 0.2 });
+          gsap.to(dot, { scale: 0, opacity: 0, duration: 0.2, overwrite: "auto" });
           gsap.to(halo, {
             scale: 0.8,
             scaleY: 0.3,
@@ -129,8 +134,9 @@ export function CustomCursor() {
             borderWidth: 1.5,
             duration: 0.3,
             ease: "power2.out",
+            overwrite: "auto",
           });
-          if (label) gsap.to(label, { opacity: 0, scale: 0.8, duration: 0.15 });
+          if (label) gsap.to(label, { opacity: 0, scale: 0.8, duration: 0.15, overwrite: "auto" });
           break;
 
         default:
@@ -139,6 +145,7 @@ export function CustomCursor() {
             opacity: 1,
             duration: 0.25,
             ease: "power2.out",
+            overwrite: "auto",
           });
           gsap.to(halo, {
             scale: 1,
@@ -148,8 +155,9 @@ export function CustomCursor() {
             borderWidth: 1.5,
             duration: 0.3,
             ease: "power2.out",
+            overwrite: "auto",
           });
-          if (label) gsap.to(label, { opacity: 0, scale: 0.8, duration: 0.15 });
+          if (label) gsap.to(label, { opacity: 0, scale: 0.8, duration: 0.15, overwrite: "auto" });
           break;
       }
     };
