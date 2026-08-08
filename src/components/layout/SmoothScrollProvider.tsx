@@ -4,6 +4,7 @@ import { useEffect, useRef, useCallback } from "react";
 import Lenis from "@studio-freight/lenis";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { setLenis } from "@/lib/lenis-store";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -29,6 +30,9 @@ export function SmoothScrollProvider({
       touchMultiplier: 1.5,
     });
 
+    // Expose Lenis instance for other components (e.g., FallingLeaves)
+    setLenis(lenis);
+
     lenis.on("scroll", ScrollTrigger.update);
 
     const tick = (time: number) => {
@@ -40,6 +44,7 @@ export function SmoothScrollProvider({
     return () => {
       gsap.ticker.remove(tick);
       lenis.destroy();
+      setLenis(null);
     };
   }, []);
 

@@ -118,3 +118,38 @@ Stage Summary:
 - Zero console errors, clean lint
 - Consistent premium hover feel across Rooms, Experiences, Gallery, Testimonials
 - Elastic GSAP return animation creates organic "bouncy" feel on mouse leave
+
+---
+Task ID: 4
+Agent: Main Orchestrator
+Task: FallingLeaves — scroll-triggered decorative leaf particles with object pooling
+
+Work Log:
+- Created `src/lib/lenis-store.ts` — module-level store exposing Lenis instance to any component
+- Updated `src/components/layout/SmoothScrollProvider.tsx` — registers Lenis instance via setLenis() on mount, clears on cleanup
+- Created `src/components/layout/FallingLeaves.tsx` — full feature scroll-triggered falling leaves component
+  - Object pool: 10 leaves on desktop, 4 on mobile (zero DOM churn)
+  - 4 SVG leaf variants (oval, maple, willow, heart) + 5 palette colors (greens + terracotta/ambers)
+  - SVGs created programmatically via createElementNS, appended to a fixed container
+  - Spawn gated by: direction must be DOWN, velocity must exceed 0.4, throttled to 1 leaf per 200ms
+  - Lenis scroll velocity modulates fall duration: fast scroll = shorter fall (~3s), slow = longer (~5.5s)
+  - Per-leaf GSAP timeline with 5 phases:
+    1. Fade in (0.6s, power2.out)
+    2. Continuous rotation (±200°, ease: none)
+    3. Sinusoidal horizontal sway (sine.inOut, yoyo repeat)
+    4. Vertical fall (power1.in ease)
+    5. Fade out + blur out (last 22%, power2.in)
+  - Randomized: size (18-34px), scale (0.8-1.15), sway amplitude (25-70px), sway frequency (2-4)
+  - Accessibility: aria-hidden="true", pointer-events: none, z-index 5 (above content, below header/cursor)
+  - Respects prefers-reduced-motion: early bailout
+  - Fallback: native wheel events if Lenis instance not yet available
+- Mounted in `src/app/page.tsx` inside SmoothScrollProvider
+
+Stage Summary:
+- Files created: `src/lib/lenis-store.ts`, `src/components/layout/FallingLeaves.tsx`
+- Files modified: `src/components/layout/SmoothScrollProvider.tsx`, `src/app/page.tsx`
+- Browser verified: 10 leaf SVGs in pool, all activate on scroll-down, recycle on completion
+- No spawn on scroll-up confirmed
+- No console errors, clean lint
+- Visual check: leaves visible at varying sizes, rotations, opacity levels; blur+fade exit working
+- Page structure intact (header, main, footer all present)

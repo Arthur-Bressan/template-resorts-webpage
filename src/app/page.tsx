@@ -1,6 +1,7 @@
 "use client";
 
 import { SmoothScrollProvider } from "@/components/layout/SmoothScrollProvider";
+import { FallingLeaves } from "@/components/layout/FallingLeaves";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Hero } from "@/components/sections/Hero";
@@ -17,6 +18,7 @@ import { BookingCTA } from "@/components/sections/BookingCTA";
 export default function Home() {
   return (
     <SmoothScrollProvider>
+      <FallingLeaves />
       <div className="min-h-screen flex flex-col">
         <Header />
 
