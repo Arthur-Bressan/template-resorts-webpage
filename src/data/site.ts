@@ -17,7 +17,7 @@ export const siteConfig = {
 };
 
 export const navLinks = [
-  { label: "A Pousada", href: "#about" },
+  { label: "Sobre", href: "/sobre" },
   { label: "Acomodações", href: "#rooms" },
   { label: "Experiências", href: "#experiences" },
   { label: "Galeria", href: "#gallery" },
