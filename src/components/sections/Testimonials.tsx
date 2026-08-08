@@ -14,7 +14,6 @@ function TestimonialCard({ t }: { t: (typeof testimonials)[0] }) {
       data-stagger-child
       className="group relative bg-[var(--color-background)] rounded-2xl p-8 shadow-md transition-shadow duration-500 hover:shadow-xl"
     >
-      <div data-card-inner>
         {/* Decorative border accent on hover */}
         <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-[var(--color-accent)] to-transparent scale-x-0 group-hover:scale-x-100 transition-transform duration-700 origin-center" />
 
@@ -53,7 +52,6 @@ function TestimonialCard({ t }: { t: (typeof testimonials)[0] }) {
             </p>
           </div>
         </div>
-      </div>
     </article>
   );
 }

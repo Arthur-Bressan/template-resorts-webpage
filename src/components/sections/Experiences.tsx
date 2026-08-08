@@ -16,7 +16,6 @@ function ExperienceCard({ exp, idx }: { exp: (typeof experiences)[0]; idx: numbe
       data-cursor-label="Detalhes"
       className="group relative rounded-2xl overflow-hidden bg-[var(--color-background)] shadow-md transition-shadow duration-500 hover:shadow-xl"
     >
-      <div data-card-inner>
         {/* Image skeleton */}
         <div className="relative h-52 overflow-hidden bg-[var(--color-surface-alt)] flex items-center justify-center">
           <div className="flex flex-col items-center gap-2 text-[var(--color-text-muted)] transition-transform duration-700 ease-out group-hover:scale-110 group-hover:-translate-y-2">
@@ -53,7 +52,6 @@ function ExperienceCard({ exp, idx }: { exp: (typeof experiences)[0]; idx: numbe
             {exp.difficulty}
           </div>
         </div>
-      </div>
     </article>
   );
 }

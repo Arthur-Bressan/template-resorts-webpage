@@ -1,19 +1,16 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef } from "react";
 import { gsap } from "gsap";
 
 /**
  * 3D perspective tilt + glow spotlight on hover.
- * Attaches mousemove/mouseleave to the card and animates
- * inner children marked with data-card-inner.
+ * The ENTIRE card element (border, shadow, content) tilts together.
  *
  * Usage:
- *   const tiltRef = useCardTilt<HTMLDivElement>();
- *   <article ref={tiltRef} className="group ...">
- *     <div data-card-inner className="...">
- *       ...card content...
- *     </div>
+ *   const tiltRef = useCardTilt<HTMLElement>();
+ *   <article ref={tiltRef} className="group relative ...">
+ *     <div data-card-inner>...content...</div>
  *   </article>
  */
 export function useCardTilt<T extends HTMLElement>() {
@@ -28,24 +25,11 @@ export function useCardTilt<T extends HTMLElement>() {
     ).matches;
     if (reducedMotion) return;
 
-    const inner = card.querySelector<HTMLElement>("[data-card-inner]");
-    if (!inner) return;
-
     const MAX_ROTATION = 8; // degrees
     const GLOW_INTENSITY = 0.12;
 
-    // Perspective on the card container
-    gsap.set(card, {
-      perspective: 800,
-      transformStyle: "preserve-3d",
-    });
-    gsap.set(inner, {
-      transformStyle: "preserve-3d",
-    });
-
-    // Glow overlay
+    // Glow overlay — appended inside card, above content via z-index
     const glow = document.createElement("div");
-    glow.setAttribute("data-card-glow", "true");
     glow.style.cssText = `
       position: absolute; inset: 0; border-radius: inherit;
       pointer-events: none; opacity: 0; z-index: 10;
@@ -56,8 +40,12 @@ export function useCardTilt<T extends HTMLElement>() {
       );
       transition: opacity 0.4s ease;
     `;
+
+    // Ensure card is positioned (required for glow absolute)
     card.style.position = card.style.position || "relative";
-    card.appendChild(glow);
+
+    // Insert glow as the FIRST child so content sits above it naturally
+    card.insertBefore(glow, card.firstChild);
 
     const onMove = (e: MouseEvent) => {
       const rect = card.getBoundingClientRect();
@@ -66,17 +54,19 @@ export function useCardTilt<T extends HTMLElement>() {
       const centerX = rect.width / 2;
       const centerY = rect.height / 2;
 
-      // Rotation proportional to distance from center (max = MAX_ROTATION)
+      // Rotation proportional to distance from center
       const rotateX = ((y - centerY) / centerY) * -MAX_ROTATION;
       const rotateY = ((x - centerX) / centerX) * MAX_ROTATION;
 
-      // Glow position (%)
+      // Glow follows cursor
       const px = (x / rect.width) * 100;
       const py = (y / rect.height) * 100;
 
-      gsap.to(inner, {
+      // Animate the CARD ITSELF — border, shadow, and content tilt together
+      gsap.to(card, {
         rotateX,
         rotateY,
+        transformPerspective: 800,
         duration: 0.4,
         ease: "power2.out",
         overwrite: "auto",
@@ -88,9 +78,11 @@ export function useCardTilt<T extends HTMLElement>() {
     };
 
     const onLeave = () => {
-      gsap.to(inner, {
+      // Bouncy elastic return to flat
+      gsap.to(card, {
         rotateX: 0,
         rotateY: 0,
+        transformPerspective: 800,
         duration: 0.6,
         ease: "elastic.out(1, 0.5)",
         overwrite: "auto",

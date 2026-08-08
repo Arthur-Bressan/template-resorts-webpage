@@ -18,7 +18,7 @@ function GalleryItem({ img, idx, onClick }: { img: (typeof galleryImages)[0]; id
       data-cursor-label="Abrir"
       className={`${img.span} relative rounded-xl overflow-hidden group cursor-pointer focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/50 focus:ring-offset-2 bg-[var(--color-surface-alt)]`}
     >
-      <div data-card-inner className="w-full h-full flex items-center justify-center">
+      <div className="w-full h-full flex items-center justify-center">
         {/* Skeleton placeholder */}
         <div className="flex flex-col items-center gap-2 text-[var(--color-text-muted)] transition-transform duration-700 ease-out group-hover:scale-110">
           <ImageIcon className="w-8 h-8 opacity-20 group-hover:opacity-40 transition-opacity duration-500" />

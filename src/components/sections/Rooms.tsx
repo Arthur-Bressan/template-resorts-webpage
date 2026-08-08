@@ -17,7 +17,6 @@ function RoomCard({ room }: { room: (typeof rooms)[0] }) {
       data-cursor-label="Ver detalhes"
       className="group relative bg-[var(--color-background)] rounded-2xl overflow-hidden shadow-md transition-shadow duration-500 hover:shadow-xl"
     >
-      <div data-card-inner>
         {/* Image skeleton */}
         <div className="relative h-64 overflow-hidden bg-[var(--color-surface-alt)] flex items-center justify-center">
           {/* Parallax image placeholder — shifts on hover */}
@@ -90,7 +89,6 @@ function RoomCard({ room }: { room: (typeof rooms)[0] }) {
             <ArrowRight className="relative z-10 w-4 h-4 transition-transform duration-500 group-hover/btn:translate-x-1.5" />
           </Link>
         </div>
-      </div>
     </article>
   );
 }
