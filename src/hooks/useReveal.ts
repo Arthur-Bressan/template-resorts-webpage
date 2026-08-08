@@ -5,105 +5,104 @@ import { gsap, ScrollTrigger } from "@/components/layout/SmoothScrollProvider";
 
 export function useReveal() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const triggersRef = useRef<ScrollTrigger[]>([]);
 
   useEffect(() => {
-    const prefersReduced = window.matchMedia(
+    if (!containerRef.current) return;
+
+    const reducedMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)"
     ).matches;
-    if (prefersReduced || !containerRef.current) return;
 
-    const container = containerRef.current;
+    if (reducedMotion) return; // elements stay visible, no animation
 
-    // Kill old triggers from previous renders
-    triggersRef.current.forEach((t) => t.kill());
-    triggersRef.current = [];
-
-    // Reveal elements
-    const revealEls = container.querySelectorAll<HTMLElement>(
-      ".reveal, .reveal-left, .reveal-right, .reveal-scale"
-    );
-    revealEls.forEach((el) => {
-      const fromVars = el.classList.contains("reveal-left")
-        ? { opacity: 0, x: -40 }
-        : el.classList.contains("reveal-right")
-        ? { opacity: 0, x: 40 }
-        : el.classList.contains("reveal-scale")
-        ? { opacity: 0, scale: 0.95 }
-        : { opacity: 0, y: 30 };
-
-      const st = ScrollTrigger.create({
-        trigger: el,
-        start: "top 88%",
-        once: true,
-        onEnter: () => {
-          gsap.to(el, {
-            ...fromVars,
-            opacity: 1,
-            x: 0,
-            y: 0,
-            scale: 1,
-            duration: 0.8,
-            ease: "power2.out",
+    const ctx = gsap.context(() => {
+      // Fade-up reveals
+      gsap.utils
+        .toArray<HTMLElement>(".reveal", containerRef.current)
+        .forEach((el) => {
+          gsap.set(el, { opacity: 0, y: 30 });
+          ScrollTrigger.create({
+            trigger: el,
+            start: "top 90%",
+            once: true,
+            onEnter: () =>
+              gsap.to(el, { opacity: 1, y: 0, duration: 0.7, ease: "power2.out" }),
           });
-        },
-      });
-      triggersRef.current.push(st);
-    });
+        });
 
-    // Text mask line reveals
-    const maskLines = container.querySelectorAll<HTMLElement>(".text-mask-line");
-    maskLines.forEach((line) => {
-      const inner = line.querySelector<HTMLElement>("span");
-      if (!inner) return;
-      const st = ScrollTrigger.create({
-        trigger: line,
-        start: "top 88%",
-        once: true,
-        onEnter: () => {
-          gsap.fromTo(
-            inner,
-            { yPercent: 100 },
-            { yPercent: 0, duration: 1, ease: "power3.out" }
+      gsap.utils
+        .toArray<HTMLElement>(".reveal-left", containerRef.current)
+        .forEach((el) => {
+          gsap.set(el, { opacity: 0, x: -30 });
+          ScrollTrigger.create({
+            trigger: el,
+            start: "top 90%",
+            once: true,
+            onEnter: () =>
+              gsap.to(el, { opacity: 1, x: 0, duration: 0.7, ease: "power2.out" }),
+          });
+        });
+
+      gsap.utils
+        .toArray<HTMLElement>(".reveal-right", containerRef.current)
+        .forEach((el) => {
+          gsap.set(el, { opacity: 0, x: 30 });
+          ScrollTrigger.create({
+            trigger: el,
+            start: "top 90%",
+            once: true,
+            onEnter: () =>
+              gsap.to(el, { opacity: 1, x: 0, duration: 0.7, ease: "power2.out" }),
+          });
+        });
+
+      // Text mask lines
+      gsap.utils
+        .toArray<HTMLElement>(".text-mask-line", containerRef.current)
+        .forEach((line) => {
+          const inner = line.querySelector<HTMLElement>("span");
+          if (!inner) return;
+          gsap.set(inner, { yPercent: 100 });
+          ScrollTrigger.create({
+            trigger: line,
+            start: "top 90%",
+            once: true,
+            onEnter: () =>
+              gsap.to(inner, {
+                yPercent: 0,
+                duration: 0.9,
+                ease: "power3.out",
+              }),
+          });
+        });
+
+      // Stagger groups
+      gsap.utils
+        .toArray<HTMLElement>("[data-stagger]", containerRef.current)
+        .forEach((container) => {
+          const children = container.querySelectorAll<HTMLElement>(
+            "[data-stagger-child]"
           );
-        },
-      });
-      triggersRef.current.push(st);
-    });
+          if (!children.length) return;
 
-    // Stagger containers
-    const staggerContainers =
-      container.querySelectorAll<HTMLElement>("[data-stagger]");
-    staggerContainers.forEach((staggerContainer) => {
-      const children = staggerContainer.querySelectorAll<HTMLElement>(
-        "[data-stagger-child]"
-      );
-      if (children.length === 0) return;
-      const st = ScrollTrigger.create({
-        trigger: staggerContainer,
-        start: "top 82%",
-        once: true,
-        onEnter: () => {
-          gsap.fromTo(
-            children,
-            { opacity: 0, y: 30 },
-            {
-              opacity: 1,
-              y: 0,
-              duration: 0.7,
-              stagger: 0.12,
-              ease: "power2.out",
-            }
-          );
-        },
-      });
-      triggersRef.current.push(st);
-    });
+          gsap.set(children, { opacity: 0, y: 25 });
+          ScrollTrigger.create({
+            trigger: container,
+            start: "top 88%",
+            once: true,
+            onEnter: () =>
+              gsap.to(children, {
+                opacity: 1,
+                y: 0,
+                duration: 0.6,
+                stagger: 0.1,
+                ease: "power2.out",
+              }),
+          });
+        });
+    }, containerRef);
 
-    return () => {
-      triggersRef.current.forEach((t) => t.kill());
-      triggersRef.current = [];
-    };
+    return () => ctx.revert();
   }, []);
 
   return containerRef;

@@ -2,7 +2,7 @@
 
 import { useReveal } from "@/hooks/useReveal";
 import { rooms } from "@/data/site";
-import { Users, Maximize2, CheckCircle2 } from "lucide-react";
+import { Users, Maximize2, CheckCircle2, ImageIcon } from "lucide-react";
 
 export function Rooms() {
   const ref = useReveal();
@@ -13,14 +13,10 @@ export function Rooms() {
       id="rooms"
       className="relative section-padding bg-[var(--color-surface)] overflow-hidden"
     >
-      {/* Background blob */}
-      <div
-        className="blob w-[600px] h-[600px] bg-[var(--color-secondary-light)] -bottom-60 -left-60"
-        style={{ opacity: 0.1 }}
-      />
+      <div className="blob w-[600px] h-[600px] bg-[var(--color-secondary-light)] -bottom-60 -left-60" />
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        {/* Section Header */}
+        {/* Header */}
         <div className="text-center mb-16">
           <span className="reveal inline-block text-sm font-semibold text-[var(--color-primary)] tracking-wider uppercase mb-4">
             Acomodações
@@ -31,8 +27,7 @@ export function Rooms() {
             </span>
           </h2>
           <p className="reveal text-base text-[var(--color-text-muted)] max-w-xl mx-auto">
-            Cada suíte e chalé foi pensado para integrar conforto e natureza,
-            com materiais rústicos, vista privilegiada e privacidade.
+            Cada suíte e chalé foi pensado para integrar conforto e natureza.
           </p>
         </div>
 
@@ -44,14 +39,12 @@ export function Rooms() {
               data-stagger-child
               className="group relative bg-[var(--color-background)] rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-shadow duration-500"
             >
-              {/* Image */}
-              <div className="relative h-64 overflow-hidden">
-                <img
-                  src={room.image}
-                  alt={room.name}
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                  loading="lazy"
-                />
+              {/* Image skeleton */}
+              <div className="relative h-64 overflow-hidden bg-[var(--color-surface-alt)] flex items-center justify-center">
+                <div className="flex flex-col items-center gap-2 text-[var(--color-text-muted)]">
+                  <ImageIcon className="w-10 h-10 opacity-30" />
+                  <span className="text-xs opacity-40">{room.name}</span>
+                </div>
                 <div className="absolute top-4 right-4 glass-strong rounded-full px-3 py-1.5">
                   <span className="text-sm font-semibold text-[var(--color-primary-dark)]">
                     R$ {room.price}
@@ -60,7 +53,6 @@ export function Rooms() {
                     /noite
                   </span>
                 </div>
-                {/* Capacity badge */}
                 <div className="absolute top-4 left-4 glass-strong rounded-full px-3 py-1.5 flex items-center gap-1.5">
                   <Users className="w-3.5 h-3.5 text-[var(--color-primary)]" />
                   <span className="text-xs font-medium text-[var(--color-text)]">
@@ -85,7 +77,6 @@ export function Rooms() {
                   {room.description}
                 </p>
 
-                {/* Amenities */}
                 <div className="flex flex-wrap gap-2 mb-5">
                   {room.amenities.slice(0, 4).map((amenity) => (
                     <span
@@ -103,7 +94,6 @@ export function Rooms() {
                   )}
                 </div>
 
-                {/* CTA */}
                 <button className="w-full py-3 rounded-xl bg-[var(--color-primary)] text-white font-medium text-sm hover:bg-[var(--color-primary-dark)] transition-colors duration-300">
                   Ver disponibilidade
                 </button>

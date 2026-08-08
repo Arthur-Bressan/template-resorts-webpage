@@ -9,24 +9,16 @@ export function FAQ() {
   const ref = useReveal();
   const [openIdx, setOpenIdx] = useState<number | null>(null);
 
-  const toggle = (idx: number) => {
-    setOpenIdx(openIdx === idx ? null : idx);
-  };
-
   return (
     <section
       ref={ref}
       id="faq"
       className="relative section-padding overflow-hidden"
     >
-      {/* Background blob */}
-      <div
-        className="blob w-[500px] h-[500px] bg-[var(--color-secondary-light)] -top-40 right-0"
-        style={{ opacity: 0.08 }}
-      />
+      <div className="blob w-[500px] h-[500px] bg-[var(--color-secondary-light)] -top-40 right-0" />
 
       <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
-        {/* Section Header */}
+        {/* Header */}
         <div className="text-center mb-12">
           <span className="reveal inline-block text-sm font-semibold text-[var(--color-primary)] tracking-wider uppercase mb-4">
             Dúvidas Frequentes
@@ -47,8 +39,8 @@ export function FAQ() {
               className="rounded-xl bg-[var(--color-surface)] overflow-hidden transition-shadow hover:shadow-md"
             >
               <button
-                onClick={() => toggle(idx)}
-                className="w-full flex items-center justify-between px-6 py-5 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/50 focus-visible:ring-offset-2"
+                onClick={() => setOpenIdx(openIdx === idx ? null : idx)}
+                className="w-full flex items-center justify-between px-6 py-5 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/50"
                 aria-expanded={openIdx === idx}
               >
                 <span className="text-base font-medium text-[var(--color-text)] pr-4">
@@ -62,9 +54,7 @@ export function FAQ() {
               </button>
               <div
                 className={`overflow-hidden transition-all duration-300 ${
-                  openIdx === idx
-                    ? "max-h-96 opacity-100"
-                    : "max-h-0 opacity-0"
+                  openIdx === idx ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
                 }`}
               >
                 <p className="px-6 pb-5 text-sm text-[var(--color-text-muted)] leading-relaxed">

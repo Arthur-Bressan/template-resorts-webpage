@@ -5,52 +5,29 @@
 
 /* ─── Theme Tokens — Mata Atlântica ─── */
 :root {
-  /* Primary — forest green */
   --color-primary: #3F5A48;
   --color-primary-light: #6B8F73;
   --color-primary-dark: #29392F;
-
-  /* Secondary — terracotta */
   --color-secondary: #C08552;
   --color-secondary-light: #D9A876;
-
-  /* Accent — golden sunset */
   --color-accent: #D9A441;
-
-  /* Backgrounds — warm sand */
   --color-background: #FAF6EE;
   --color-surface: #F1EAD9;
   --color-surface-alt: #E8DFC9;
-
-  /* Text */
   --color-text: #2E2A22;
   --color-text-muted: #6B6255;
-
-  /* Borders */
   --color-border: #DCD3BF;
-
-  /* States */
   --color-success: #6B8F73;
   --color-error: #B5654A;
-
-  /* Glass morphism */
   --glass-bg: rgba(250, 246, 238, 0.65);
   --glass-border: rgba(220, 211, 191, 0.4);
   --glass-blur: 16px;
-
-  /* Typography scale */
   --font-serif: var(--font-fraunces), 'Georgia', serif;
   --font-sans: var(--font-nunito-sans), 'system-ui', sans-serif;
-
-  /* Spacing */
   --section-padding: clamp(4rem, 8vw, 8rem);
-
-  /* Radius */
   --radius: 0.75rem;
   --radius-lg: 1rem;
   --radius-xl: 1.5rem;
-
-  /* Shadows — warm-toned */
   --shadow-sm: 0 1px 3px rgba(46, 42, 34, 0.06);
   --shadow-md: 0 4px 12px rgba(46, 42, 34, 0.08);
   --shadow-lg: 0 8px 32px rgba(46, 42, 34, 0.12);
@@ -81,21 +58,18 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
-/* ─── Base Styles ─── */
+/* ─── Base ─── */
 @layer base {
   * {
     @apply border-border;
   }
-
   :focus-visible {
     outline: 2px solid var(--color-primary);
     outline-offset: 2px;
   }
-
   html {
-    scroll-behavior: auto; /* Lenis handles smooth scroll */
+    scroll-behavior: auto;
   }
-
   body {
     font-family: var(--font-sans);
     color: var(--color-text);
@@ -104,57 +78,38 @@
     -moz-osx-font-smoothing: grayscale;
     overflow-x: hidden;
   }
-
-  /* Serif headings */
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-serif);
     font-weight: 400;
     color: var(--color-text);
     line-height: 1.15;
   }
-
   h1 { font-size: clamp(2.5rem, 6vw, 5rem); }
   h2 { font-size: clamp(2rem, 4vw, 3.5rem); }
   h3 { font-size: clamp(1.5rem, 3vw, 2rem); }
   h4 { font-size: clamp(1.25rem, 2vw, 1.5rem); }
-
   p {
     color: var(--color-text-muted);
     line-height: 1.7;
   }
-
   a {
     color: var(--color-primary);
     transition: color 0.2s ease;
   }
-
   a:hover {
     color: var(--color-primary-dark);
   }
-
-  /* Selection */
   ::selection {
     background-color: var(--color-primary-light);
     color: white;
   }
-
-  /* Scrollbar */
-  ::-webkit-scrollbar {
-    width: 8px;
-  }
-  ::-webkit-scrollbar-track {
-    background: var(--color-surface);
-  }
-  ::-webkit-scrollbar-thumb {
-    background: var(--color-border);
-    border-radius: 4px;
-  }
-  ::-webkit-scrollbar-thumb:hover {
-    background: var(--color-text-muted);
-  }
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-track { background: var(--color-surface); }
+  ::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--color-text-muted); }
 }
 
-/* ─── Utility Classes ─── */
+/* ─── Utilities ─── */
 @layer utilities {
   .glass {
     background: var(--glass-bg);
@@ -162,131 +117,31 @@
     -webkit-backdrop-filter: blur(var(--glass-blur));
     border: 1px solid var(--glass-border);
   }
-
   .glass-strong {
     background: rgba(250, 246, 238, 0.85);
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
     border: 1px solid var(--glass-border);
   }
-
-  .glass-dark {
-    background: rgba(41, 57, 47, 0.75);
-    backdrop-filter: blur(var(--glass-blur));
-    -webkit-backdrop-filter: blur(var(--glass-blur));
-    border: 1px solid rgba(107, 143, 115, 0.3);
-    color: var(--color-background);
-  }
-
-  .text-gradient-primary {
-    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-
-  .text-gradient-accent {
-    background: linear-gradient(135deg, var(--color-secondary), var(--color-accent));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-
   .blob {
     position: absolute;
     border-radius: 50%;
     filter: blur(80px);
-    opacity: 0.4;
+    opacity: 0.25;
     pointer-events: none;
   }
-
   .section-padding {
     padding-top: var(--section-padding);
     padding-bottom: var(--section-padding);
   }
 
-  /* Reveal animation base states */
-  .reveal {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-
-  .reveal-left {
-    opacity: 0;
-    transform: translateX(-40px);
-  }
-
-  .reveal-right {
-    opacity: 0;
-    transform: translateX(40px);
-  }
-
-  .reveal-scale {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-
-  /* Hero text mask */
+  /* Text mask — GSAP will animate the inner span */
   .text-mask-line {
     overflow: hidden;
     display: block;
   }
-
   .text-mask-line > span {
     display: block;
-    transform: translateY(100%);
+    /* GSAP sets yPercent: 0 on enter — no CSS opacity hack */
   }
-
-  /* Image reveal */
-  .img-reveal {
-    overflow: hidden;
-    position: relative;
-  }
-
-  .img-reveal::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: var(--color-background);
-    transform-origin: right;
-  }
-
-  /* Reduced motion */
-  @media (prefers-reduced-motion: reduce) {
-    .reveal,
-    .reveal-left,
-    .reveal-right,
-    .reveal-scale {
-      opacity: 1;
-      transform: none;
-      transition: none;
-    }
-
-    .text-mask-line > span {
-      transform: none;
-    }
-
-    .img-reveal::after {
-      display: none;
-    }
-  }
-}
-
-/* ─── Custom scrollbar for content areas ─── */
-.custom-scrollbar {
-  scrollbar-width: thin;
-  scrollbar-color: var(--color-border) transparent;
-}
-
-.custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: var(--color-border);
-  border-radius: 3px;
 }

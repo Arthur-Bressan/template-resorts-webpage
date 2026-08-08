@@ -1,34 +1,24 @@
 "use client";
 
 import { useReveal } from "@/hooks/useReveal";
-import { Leaf } from "lucide-react";
+import { Leaf, ImageIcon } from "lucide-react";
 
 export function About() {
   const ref = useReveal();
 
   return (
-    <section
-      ref={ref}
-      id="about"
-      className="relative section-padding overflow-hidden"
-    >
-      {/* Background blob */}
-      <div
-        className="blob w-[500px] h-[500px] bg-[var(--color-primary-light)] -top-40 -right-40"
-        style={{ opacity: 0.15 }}
-      />
+    <section ref={ref} id="about" className="relative section-padding overflow-hidden">
+      <div className="blob w-[500px] h-[500px] bg-[var(--color-primary-light)] -top-40 -right-40" />
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-          {/* Image */}
+          {/* Image skeleton */}
           <div className="reveal-left relative">
-            <div className="img-reveal rounded-2xl overflow-hidden shadow-xl">
-              <img
-                src="/images/about.jpg"
-                alt="Área comum da pousada com decoração rústica e vista para o jardim"
-                className="w-full h-[400px] md:h-[500px] object-cover"
-                loading="lazy"
-              />
+            <div className="rounded-2xl overflow-hidden shadow-xl bg-[var(--color-surface-alt)] flex items-center justify-center aspect-[4/3]">
+              <div className="flex flex-col items-center gap-3 text-[var(--color-text-muted)]">
+                <ImageIcon className="w-12 h-12 opacity-40" />
+                <span className="text-sm opacity-50">Sua imagem aqui</span>
+              </div>
             </div>
             {/* Floating card */}
             <div className="absolute -bottom-6 -right-4 md:right-6 glass-strong rounded-xl p-4 shadow-lg">
@@ -74,17 +64,14 @@ export function About() {
               <p className="reveal text-base leading-relaxed">
                 Hoje, com 8 chalés e suítes integrados à Mata Atlântica, somos
                 referência em turismo sustentável. Cada detalhe — do café da
-                manhã com ingredientes orgânicos da nossa horta aos trilhas
+                manhã com ingredientes orgânicos da nossa horta às trilhas
                 guiadas por naturalistas — é pensado para que você viva uma
                 experiência autêntica.
               </p>
             </div>
 
             {/* Features mini */}
-            <div
-              className="mt-8 grid grid-cols-2 gap-4"
-              data-stagger
-            >
+            <div className="mt-8 grid grid-cols-2 gap-4" data-stagger>
               {[
                 { label: "8 Acomodações", desc: "Entre suítes e chalés" },
                 { label: "50 hectares", desc: "De Mata Atlântica" },

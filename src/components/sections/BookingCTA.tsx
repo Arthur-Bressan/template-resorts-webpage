@@ -1,65 +1,30 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { gsap, ScrollTrigger } from "@/components/layout/SmoothScrollProvider";
 import { siteConfig } from "@/data/site";
 import { Phone, Mail, Calendar } from "lucide-react";
 
 export function BookingCTA() {
-  const sectionRef = useRef<HTMLElement>(null);
-
-  useEffect(() => {
-    const prefersReduced = window.matchMedia(
-      "(prefers-reduced-motion: reduce)"
-    ).matches;
-    if (!sectionRef.current || prefersReduced) return;
-
-    const ctx = gsap.context(() => {
-      // Parallax on background
-      const bg = sectionRef.current?.querySelector(".cta-bg");
-      if (bg) {
-        gsap.to(bg, {
-          y: 60,
-          ease: "none",
-          scrollTrigger: {
-            trigger: sectionRef.current,
-            start: "top bottom",
-            end: "bottom top",
-            scrub: 1,
-          },
-        });
-      }
-    }, sectionRef);
-
-    return () => ctx.revert();
-  }, []);
-
   return (
     <section
-      ref={sectionRef}
       id="booking"
       className="relative py-32 overflow-hidden"
     >
       {/* Background */}
-      <div className="cta-bg absolute inset-0">
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{
-            backgroundImage: "url('/images/cta-bg.jpg')",
-          }}
-        />
-        <div className="absolute inset-0 bg-[var(--color-primary-dark)]/80 backdrop-blur-sm" />
-      </div>
+      <div className="absolute inset-0 bg-[var(--color-primary-dark)]" />
+      <div className="blob w-72 h-72 bg-[var(--color-accent)] top-10 -left-36" />
+      <div className="blob w-96 h-96 bg-[var(--color-primary-light)] -bottom-48 right-0" />
 
-      {/* Decorative blobs */}
-      <div
-        className="blob w-72 h-72 bg-[var(--color-accent)] top-10 -left-36"
-        style={{ opacity: 0.1 }}
-      />
-      <div
-        className="blob w-96 h-96 bg-[var(--color-primary-light)] -bottom-48 right-0"
-        style={{ opacity: 0.12 }}
-      />
+      {/* Decorative pattern */}
+      <div className="absolute inset-0 opacity-[0.03]">
+        <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <pattern id="cta-grid" width="60" height="60" patternUnits="userSpaceOnUse">
+              <circle cx="30" cy="30" r="1" fill="white" />
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#cta-grid)" />
+        </svg>
+      </div>
 
       {/* Content */}
       <div className="relative z-10 mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 text-center">
@@ -67,16 +32,13 @@ export function BookingCTA() {
         <h2 className="font-serif text-white mb-4 leading-tight">
           Pronto para sua próxima
           <br />
-          <span className="text-[var(--color-accent)]">
-            grande escapada?
-          </span>
+          <span className="text-[var(--color-accent)]">grande escapada?</span>
         </h2>
         <p className="text-lg text-white/70 max-w-2xl mx-auto mb-10">
           Reserve agora e garanta os melhores preços diretamente conosco.
           Diárias a partir de R$ 380 com café da manhã incluso.
         </p>
 
-        {/* Contact options */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
           <a
             href={`tel:${siteConfig.phone}`}
