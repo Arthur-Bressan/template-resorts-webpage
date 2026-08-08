@@ -38,3 +38,32 @@ Stage Summary:
 - Clean lint (0 errors/warnings)
 - Dev server returns 200 with 112KB HTML output
 - All components reusable and data-driven (src/data/site.ts for whitelabel customization)
+
+---
+Task ID: 2
+Agent: Main Orchestrator
+Task: Custom animated cursor with GSAP quickTo, dual elements (dot + halo), interactive states
+
+Work Log:
+- Created `src/components/layout/CustomCursor.tsx` — client component with dual cursor elements
+- Dot element: 6px white circle, follows mouse instantly via gsap.set
+- Halo element: 40px ring, follows mouse with organic lag via gsap.quickTo (0.35s, power3.out)
+- Implemented 4 cursor states: default, link (a/button), card (data-cursor="card"), input (input/textarea)
+- Detection priority: target data-cursor > inputs > links/buttons > ancestor data-cursor > default
+- Added data-cursor="card" to Room articles, Gallery buttons, Experience articles
+- Cursor hidden by default, activated only on first mousemove (no flash)
+- Hides on mouseleave viewport, keydown (keyboard nav), prefers-reduced-motion
+- Uses mix-blend-mode: difference for guaranteed contrast on any background
+- cursor: none !important applied only when custom-cursor-active class is on <html>
+- Fixed Tailwind CSS 4 issue: moved cursor CSS into @layer base (un-layered CSS was stripped)
+- Mounted cursor in layout.tsx (global across all pages)
+- Verified via agent-browser: CSS rules present, computed styles correct, no JS errors
+- Lint passes cleanly
+
+Stage Summary:
+- Custom cursor: `src/components/layout/CustomCursor.tsx`
+- CSS in `globals.css` @layer base block with responsive media queries
+- Supports: default, link, card (with label), input states
+- Progressive enhancement: only on (pointer: fine) and (hover: hover)
+- Respects prefers-reduced-motion and keyboard navigation
+- Zero performance impact on touch/mobile devices (display: none)

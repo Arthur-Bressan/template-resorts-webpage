@@ -36,6 +36,8 @@ export function Rooms() {
             <article
               key={room.id}
               data-stagger-child
+              data-cursor="card"
+              data-cursor-label="Ver detalhes"
               className="group relative bg-[var(--color-background)] rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-500 hover:-translate-y-1"
             >
               {/* Image skeleton */}

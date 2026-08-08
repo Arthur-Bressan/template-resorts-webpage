@@ -50,6 +50,8 @@ export function Gallery() {
               <button
                 key={idx}
                 data-stagger-child
+                data-cursor="card"
+                data-cursor-label="Abrir"
                 onClick={() => setLightbox(idx)}
                 className={`${img.span} relative rounded-xl overflow-hidden group cursor-pointer focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/50 focus:ring-offset-2 bg-[var(--color-surface-alt)] flex items-center justify-center`}
               >

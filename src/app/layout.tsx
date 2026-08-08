@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Fraunces, Nunito_Sans } from "next/font/google";
+import { CustomCursor } from "@/components/layout/CustomCursor";
 import "./globals.css";
 
 const fraunces = Fraunces({
@@ -51,6 +52,7 @@ export default function RootLayout({
       <body
         className={`${fraunces.variable} ${nunitoSans.variable} antialiased`}
       >
+        <CustomCursor />
         {children}
       </body>
     </html>

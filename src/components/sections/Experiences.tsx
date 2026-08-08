@@ -37,6 +37,8 @@ export function Experiences() {
             <article
               key={exp.id}
               data-stagger-child
+              data-cursor="card"
+              data-cursor-label="Detalhes"
               className="group relative rounded-2xl overflow-hidden bg-[var(--color-background)] shadow-md hover:shadow-xl transition-all duration-500 hover:-translate-y-1"
             >
               {/* Image skeleton */}
