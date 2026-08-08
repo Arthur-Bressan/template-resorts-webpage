@@ -2,7 +2,8 @@
 
 import { useReveal } from "@/hooks/useReveal";
 import { rooms } from "@/data/site";
-import { Users, Maximize2, CheckCircle2, ImageIcon } from "lucide-react";
+import { Users, Maximize2, CheckCircle2, ImageIcon, ArrowRight } from "lucide-react";
+import Link from "next/link";
 
 export function Rooms() {
   const ref = useReveal();
@@ -16,7 +17,6 @@ export function Rooms() {
       <div className="blob w-[600px] h-[600px] bg-[var(--color-secondary-light)] -bottom-60 -left-60" />
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        {/* Header */}
         <div className="text-center mb-16">
           <span className="reveal inline-block text-sm font-semibold text-[var(--color-primary)] tracking-wider uppercase mb-4">
             Acomodações
@@ -31,13 +31,12 @@ export function Rooms() {
           </p>
         </div>
 
-        {/* Room Cards */}
         <div className="grid md:grid-cols-2 gap-6" data-stagger>
           {rooms.map((room) => (
             <article
               key={room.id}
               data-stagger-child
-              className="group relative bg-[var(--color-background)] rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-shadow duration-500"
+              className="group relative bg-[var(--color-background)] rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-500 hover:-translate-y-1"
             >
               {/* Image skeleton */}
               <div className="relative h-64 overflow-hidden bg-[var(--color-surface-alt)] flex items-center justify-center">
@@ -78,13 +77,13 @@ export function Rooms() {
                 </p>
 
                 <div className="flex flex-wrap gap-2 mb-5">
-                  {room.amenities.slice(0, 4).map((amenity) => (
+                  {room.amenities.slice(0, 4).map((a) => (
                     <span
-                      key={amenity}
+                      key={a.name}
                       className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[var(--color-surface)] text-xs text-[var(--color-text-muted)]"
                     >
                       <CheckCircle2 className="w-3 h-3 text-[var(--color-primary)]" />
-                      {amenity}
+                      {a.name}
                     </span>
                   ))}
                   {room.amenities.length > 4 && (
@@ -94,9 +93,13 @@ export function Rooms() {
                   )}
                 </div>
 
-                <button className="w-full py-3 rounded-xl bg-[var(--color-primary)] text-white font-medium text-sm hover:bg-[var(--color-primary-dark)] transition-colors duration-300">
-                  Ver disponibilidade
-                </button>
+                <Link
+                  href={`/quartos/${room.slug}`}
+                  className="w-full py-3 rounded-xl bg-[var(--color-secondary)] text-white font-medium text-sm hover:bg-[var(--color-secondary-light)] transition-colors duration-300 flex items-center justify-center gap-2 group/btn"
+                >
+                  Ver mais
+                  <ArrowRight className="w-4 h-4 transition-transform group-hover/btn:translate-x-1" />
+                </Link>
               </div>
             </article>
           ))}
