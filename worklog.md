@@ -62,8 +62,11 @@ Work Log:
 
 Stage Summary:
 - Custom cursor: `src/components/layout/CustomCursor.tsx`
-- CSS in `globals.css` @layer base block with responsive media queries
+- All styles via inline style (no dependency on Tailwind CSS 4 @layer processing)
+- `<style>` tag via `dangerouslySetInnerHTML` for cursor:none rule (outside @layer, not stripped)
 - Supports: default, link, card (with label), input states
 - Progressive enhancement: only on (pointer: fine) and (hover: hover)
 - Respects prefers-reduced-motion and keyboard navigation
-- Zero performance impact on touch/mobile devices (display: none)
+- Inline `opacity: 0` + `transform: translate(-100px)` prevents flash before GSAP init
+- Fix: moved cursor CSS out of @layer base (Tailwind CSS 4 strips/nests media queries incorrectly)
+- Fix: removed useState for enabled flag (React lint: no setState in effect)

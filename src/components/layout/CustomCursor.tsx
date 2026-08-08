@@ -11,19 +11,20 @@ export function CustomCursor() {
   const labelRef = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
+    const mqFine = window.matchMedia("(pointer: fine) and (hover: hover)");
+    const mqReduced = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+    // On touch / reduced-motion: bail out — elements stay invisible, native cursor works
+    if (!mqFine.matches || mqReduced.matches) return;
+
     const dot = dotRef.current;
     const halo = haloRef.current;
     const label = labelRef.current;
     if (!dot || !halo) return;
 
-    // ── Guard: only activate on fine pointer, non-reduced motion ──
-    const mqFine = window.matchMedia("(pointer: fine) and (hover: hover)");
-    const mqReduced = window.matchMedia("(prefers-reduced-motion: reduce)");
-
-    if (!mqFine.matches || mqReduced.matches) return;
-
-    // ── Initial state: off-screen, invisible ──
-    gsap.set([dot, halo], { x: -100, y: -100, opacity: 0 });
+    // ── Initial state: off-screen, invisible via GSAP (not CSS) ──
+    gsap.set(dot, { x: -100, y: -100, opacity: 0, scale: 1, force3D: true });
+    gsap.set(halo, { x: -100, y: -100, opacity: 0, scale: 1, force3D: true });
 
     // ── gsap.quickTo for halo organic lag ──
     const haloX = gsap.quickTo(halo, "x", {
@@ -40,13 +41,13 @@ export function CustomCursor() {
     let isActive = false;
     let hasMoved = false;
 
-    // ── Show / Hide ──
+    // ── Show / Hide (controls native cursor hiding too) ──
     const show = () => {
       if (isActive) return;
       isActive = true;
       gsap.to([dot, halo], {
         opacity: 1,
-        duration: 0.25,
+        duration: 0.2,
         ease: "power2.out",
       });
       document.documentElement.classList.add("custom-cursor-active");
@@ -57,7 +58,7 @@ export function CustomCursor() {
       isActive = false;
       gsap.to([dot, halo], {
         opacity: 0,
-        duration: 0.25,
+        duration: 0.2,
         ease: "power2.out",
       });
       document.documentElement.classList.remove("custom-cursor-active");
@@ -93,7 +94,6 @@ export function CustomCursor() {
             borderWidth: 1.5,
             duration: 0.3,
             ease: "power2.out",
-            boxShadow: "0 0 24px rgba(217, 164, 65, 0.2)",
           });
           if (label) gsap.to(label, { opacity: 0, scale: 0.8, duration: 0.15 });
           break;
@@ -101,19 +101,18 @@ export function CustomCursor() {
         case "card":
           gsap.to(dot, { scale: 0, opacity: 0, duration: 0.2 });
           gsap.to(halo, {
-            scale: 2,
+            scale: 2.2,
             scaleY: 1,
             borderRadius: "50%",
             borderWidth: 1,
             duration: 0.35,
             ease: "power2.out",
-            boxShadow: "0 0 20px rgba(107, 143, 115, 0.15)",
           });
-          // Counter-scale label so it stays at natural visual size
+          // Counter-scale label so it stays readable despite halo scale
           if (label)
             gsap.to(label, {
               opacity: 1,
-              scale: 0.5,
+              scale: 0.45,
               duration: 0.25,
               delay: 0.08,
               ease: "back.out(1.7)",
@@ -126,11 +125,10 @@ export function CustomCursor() {
             scale: 0.8,
             scaleY: 0.3,
             scaleX: 1.1,
-            borderRadius: "1px",
+            borderRadius: "2px",
             borderWidth: 1.5,
             duration: 0.3,
             ease: "power2.out",
-            boxShadow: "0 0 0px transparent",
           });
           if (label) gsap.to(label, { opacity: 0, scale: 0.8, duration: 0.15 });
           break;
@@ -150,7 +148,6 @@ export function CustomCursor() {
             borderWidth: 1.5,
             duration: 0.3,
             ease: "power2.out",
-            boxShadow: "0 0 12px rgba(63, 90, 72, 0.08)",
           });
           if (label) gsap.to(label, { opacity: 0, scale: 0.8, duration: 0.15 });
           break;
@@ -172,12 +169,11 @@ export function CustomCursor() {
     };
 
     // ── Detect cursor type from hovered element ──
-    // Priority: target data-cursor > inputs > links/buttons > ancestor data-cursor > default
     const getTypeForElement = (target: HTMLElement): {
       type: CursorType;
       labelText?: string;
     } => {
-      // 1. Explicit data-cursor on the target itself (wins over tag detection)
+      // 1. Explicit data-cursor on the target itself
       if (target.dataset.cursor) {
         return {
           type: (target.dataset.cursor as CursorType) || "default",
@@ -187,7 +183,7 @@ export function CustomCursor() {
 
       const tag = target.tagName.toLowerCase();
 
-      // 2. Auto-detect: text inputs
+      // 2. Text inputs
       if (
         tag === "input" ||
         tag === "textarea" ||
@@ -197,7 +193,7 @@ export function CustomCursor() {
         return { type: "input" };
       }
 
-      // 3. Auto-detect: links/buttons without explicit data-cursor
+      // 3. Links/buttons without explicit data-cursor
       if (
         tag === "a" ||
         tag === "button" ||
@@ -227,17 +223,15 @@ export function CustomCursor() {
       setType(type, labelText);
     };
 
-    // ── Viewport enter/leave ──
-    const onMouseEnterViewport = () => show();
+    // ── Viewport leave ──
     const onMouseLeaveViewport = () => hide();
 
-    // ── Keyboard: hide cursor during keyboard navigation ──
+    // ── Keyboard: hide during keyboard navigation ──
     const onKeyDown = () => hide();
 
     // ── Register events ──
     document.addEventListener("mousemove", onMouseMove, { passive: true });
-    document.addEventListener("mouseover", onMouseOver, true); // capture phase
-    document.addEventListener("mouseenter", onMouseEnterViewport);
+    document.addEventListener("mouseover", onMouseOver, true);
     document.addEventListener("mouseleave", onMouseLeaveViewport);
     document.addEventListener("keydown", onKeyDown, { passive: true });
 
@@ -251,11 +245,9 @@ export function CustomCursor() {
     mqFine.addEventListener("change", onFineChange);
     mqReduced.addEventListener("change", onReducedChange);
 
-    // ── Cleanup ──
     return () => {
       document.removeEventListener("mousemove", onMouseMove);
       document.removeEventListener("mouseover", onMouseOver, true);
-      document.removeEventListener("mouseenter", onMouseEnterViewport);
       document.removeEventListener("mouseleave", onMouseLeaveViewport);
       document.removeEventListener("keydown", onKeyDown);
       mqFine.removeEventListener("change", onFineChange);
@@ -268,13 +260,92 @@ export function CustomCursor() {
   return (
     <>
       {/* Central dot — follows mouse instantly */}
-      <div ref={dotRef} className="cursor-dot" aria-hidden="true" />
+      <div
+        ref={dotRef}
+        aria-hidden="true"
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          width: 6,
+          height: 6,
+          marginLeft: -3,
+          marginTop: -3,
+          borderRadius: "50%",
+          backgroundColor: "white",
+          pointerEvents: "none",
+          zIndex: 9999,
+          willChange: "transform",
+          mixBlendMode: "difference",
+          opacity: 0,
+          transform: "translate(-100px, -100px)",
+        }}
+      />
       {/* Outer halo — follows with organic lag */}
-      <div ref={haloRef} className="cursor-halo" aria-hidden="true">
-        <span ref={labelRef} className="cursor-label">
+      <div
+        ref={haloRef}
+        aria-hidden="true"
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          width: 40,
+          height: 40,
+          marginLeft: -20,
+          marginTop: -20,
+          borderRadius: "50%",
+          border: "1.5px solid white",
+          pointerEvents: "none",
+          zIndex: 9999,
+          willChange: "transform",
+          mixBlendMode: "difference",
+          opacity: 0,
+          transform: "translate(-100px, -100px)",
+        }}
+      >
+        <span
+          ref={labelRef}
+          style={{
+            position: "absolute",
+            inset: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontFamily: "var(--font-sans, system-ui, sans-serif)",
+            fontSize: 11,
+            fontWeight: 600,
+            letterSpacing: "0.02em",
+            color: "white",
+            whiteSpace: "nowrap",
+            opacity: 0,
+            transform: "scale(0.8)",
+            userSelect: "none",
+            pointerEvents: "none",
+          }}
+        >
           Ver mais
         </span>
       </div>
+      {/* Inject cursor:none style for native cursor hiding */}
+      <CursorStyleOverride />
     </>
+  );
+}
+
+/**
+ * Injects a <style> tag that hides the native cursor ONLY when
+ * the JS-driven class `custom-cursor-active` is present on <html>.
+ * Placed outside @layer so Tailwind CSS 4 won't strip it.
+ */
+function CursorStyleOverride() {
+  return (
+    <style dangerouslySetInnerHTML={{ __html: `
+      html.custom-cursor-active,
+      html.custom-cursor-active *,
+      html.custom-cursor-active *::before,
+      html.custom-cursor-active *::after {
+        cursor: none !important;
+      }
+    ` }} />
   );
 }
