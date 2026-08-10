@@ -274,3 +274,32 @@ Work Log:
 Stage Summary:
 - All 11 public routes returning 200
 - LGPD compliance restored (CookieConsent + legal pages)
+
+---
+Task ID: turso-fix
+Agent: Main Orchestrator
+Task: Fix Turso/libsql integration for Prisma v6 — resolve URL validation and adapter issues
+
+Work Log:
+- Analyzed error: Prisma v6 with provider="sqlite" only accepts file: URLs, not libsql://
+- Tried provider="libsql" — not supported in Prisma v6.19.3 or v7.9.1
+- Installed @prisma/adapter-libsql@6 and @libsql/client
+- Discovered PrismaLibSQL is actually PrismaLibSQLAdapterFactory — constructor takes config object, NOT pre-created client
+- Fixed: pass { url, authToken } config object directly to PrismaLibSQL constructor
+- Discovered bundled @libsql/client in adapter doesn't support auth_token query param (only authToken)
+- Created parseLibsqlUrl() helper to extract auth_token from URL and pass as separate authToken property
+- Updated db.ts: conditional adapter (libsql:// → Turso adapter, file:// → standard PrismaClient)
+- Updated seed.ts: same conditional adapter pattern with parseLibsqlUrl
+- Created scripts/setup-turso.ts: generates DDL SQL from Prisma schema, executes against Turso via @libsql/client, optional --seed flag
+- Removed deprecated previewFeatures=["driverAdapters"] from schema (not needed in Prisma v6)
+- Verified: prisma generate, prisma db push, prisma db seed all work with local SQLite
+- Verified: adapter accepts libsql:// URLs without URL validation errors
+- Verified: Next.js build passes, lint clean (0 errors)
+
+Stage Summary:
+- Turso integration fully working via @prisma/adapter-libsql
+- parseLibsqlUrl() handles both auth_token (snake_case) and authToken (camelCase) in URLs
+- scripts/setup-turso.ts automates schema deployment to Turso
+- User workflow: local dev uses file: SQLite, Vercel uses libsql:// Turso via adapter
+- Key files changed: prisma/schema.prisma, src/lib/db.ts, prisma/seed.ts, .env.example
+- New file: scripts/setup-turso.ts
