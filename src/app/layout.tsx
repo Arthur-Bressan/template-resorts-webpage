@@ -29,6 +29,9 @@ export async function generateMetadata(): Promise<Metadata> {
     return {
       title: `${title} — Pousada & Spa`,
       description,
+      icons: {
+        icon: '/favicon.png',
+      },
       keywords: [
         "pousada",
         "hospedagem",
@@ -52,6 +55,9 @@ export async function generateMetadata(): Promise<Metadata> {
     return {
       title: "Refúgio Mata Atlântica — Pousada & Spa",
       description: "Pousada premium na Mata Atlântica",
+      icons: {
+        icon: '/favicon.png',
+      },
     };
   }
 }
