@@ -23,8 +23,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export async function generateStaticParams() {
-  const rooms = await getRooms();
-  return rooms.map((room) => ({ slug: room.slug }));
+  try {
+    const rooms = await getRooms();
+    return rooms.map((room) => ({ slug: room.slug }));
+  } catch {
+    // If DB is unreachable during build, return empty — pages will be generated on demand
+    return [];
+  }
 }
 
 export default async function QuartoLayout({ children }: { children: React.ReactNode }) {
