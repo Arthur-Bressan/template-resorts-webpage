@@ -366,3 +366,27 @@ Stage Summary:
 - Mobile responsive confirmed
 - All API routes (auth, dashboard) returning 200
 - Ready for Vercel deployment with 3 env vars configured
+
+---
+Task ID: fix-upload-vercel
+Agent: Main Agent
+Task: Fix image upload to work on Vercel (replace fs/promises with @vercel/blob)
+
+Work Log:
+- Root cause: Vercel serverless functions have read-only filesystem (except /tmp)
+- Installed @vercel/blob v2.7.0 package
+- Rewrote /api/admin/upload/route.ts:
+  - Production: uses put() from @vercel/blob when BLOB_READ_WRITE_TOKEN env var is set
+  - Development: uses local filesystem (public/images/uploads/) when no token
+  - Added validation: file type (JPEG/PNG/WebP/GIF), file size (5MB max)
+  - Returns blob CDN URL in production, local path in dev
+- Updated .env.example with BLOB_READ_WRITE_TOKEN documentation
+- ImageUpload component works with both URL formats without changes
+- Verified locally: POST /api/admin/upload returns 200, file saved to disk
+- Lint clean (0 errors)
+- Pushed to GitHub: commit 4acd6e7
+
+Stage Summary:
+- Upload route now dual-mode: Vercel Blob (prod) + local FS (dev)
+- User needs to create Blob store on Vercel dashboard and set BLOB_READ_WRITE_TOKEN
+- Files: src/app/api/admin/upload/route.ts, package.json, .env.example
