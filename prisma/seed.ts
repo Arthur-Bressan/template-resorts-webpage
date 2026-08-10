@@ -3,6 +3,8 @@ import { PrismaLibSQL } from '@prisma/adapter-libsql'
 import bcrypt from 'bcryptjs'
 
 const databaseUrl = process.env.DATABASE_URL || 'file:./db/custom.db'
+const tursoUrl = process.env.TURSO_DATABASE_URL
+const tursoToken = process.env.TURSO_AUTH_TOKEN
 
 /** Parse libsql:// URL to extract auth_token → authToken */
 function parseLibsqlUrl(url: string): { url: string; authToken?: string } {
@@ -14,18 +16,15 @@ function parseLibsqlUrl(url: string): { url: string; authToken?: string } {
 }
 
 function createPrismaClient() {
+  // Support both TURSO_DATABASE_URL/TURSO_AUTH_TOKEN (new) and DATABASE_URL with libsql:// (legacy)
+  if (tursoUrl) {
+    const adapter = new PrismaLibSQL({ url: tursoUrl, authToken: tursoToken })
+    return new PrismaClient({ adapter })
+  }
   if (databaseUrl.startsWith('libsql://')) {
     const { url, authToken } = parseLibsqlUrl(databaseUrl)
     const adapter = new PrismaLibSQL({ url, authToken })
-    const originalEnv = process.env.DATABASE_URL
-    process.env.DATABASE_URL = 'file:./placeholder.db'
-    const client = new PrismaClient({ adapter })
-    if (originalEnv !== undefined) {
-      process.env.DATABASE_URL = originalEnv
-    } else {
-      delete process.env.DATABASE_URL
-    }
-    return client
+    return new PrismaClient({ adapter })
   }
   return new PrismaClient()
 }

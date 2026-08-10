@@ -1,38 +1,24 @@
 import { PrismaClient } from '@prisma/client'
 import { PrismaLibSQL } from '@prisma/adapter-libsql'
 
-const databaseUrl = process.env.DATABASE_URL || 'file:./db/custom.db'
-
 /**
- * Parse a libsql:// URL to extract auth token.
- * Handles both auth_token (snake_case, Turso CLI default) and authToken (camelCase, libsql client).
- * Returns a clean URL + separate authToken property for maximum compatibility.
+ * Prisma schema uses `url = env("DATABASE_URL")` with `provider = "sqlite"`.
+ * SQLite provider ONLY accepts `file:` URLs for validation.
+ *
+ * For Turso (libsql://), we use separate env vars and the Prisma adapter.
+ * The adapter handles all DB operations — the schema URL is just for validation.
+ *
+ * Local dev: DATABASE_URL="file:./db/custom.db" (default .env)
+ * Vercel/Turso: TURSO_DATABASE_URL="libsql://..." + TURSO_AUTH_TOKEN="..."
+ *               DATABASE_URL="file:./placeholder.db" (for schema validation)
  */
-function parseLibsqlUrl(url: string): { url: string; authToken?: string } {
-  const match = url.match(/\?(?:auth_token|authToken)=([^&]+)/)
-  if (match) {
-    const cleanUrl = url.split('?')[0]
-    return { url: cleanUrl, authToken: match[1] }
-  }
-  return { url }
-}
+const tursoUrl = process.env.TURSO_DATABASE_URL
+const tursoToken = process.env.TURSO_AUTH_TOKEN
 
 function createPrismaClient(): PrismaClient {
-  if (databaseUrl.startsWith('libsql://')) {
-    const { url, authToken } = parseLibsqlUrl(databaseUrl)
-    const adapter = new PrismaLibSQL({ url, authToken })
-    // Prisma validates DATABASE_URL against provider = "sqlite" at construction time.
-    // We must temporarily override the env var to a valid file: URL so validation passes.
-    // The adapter handles all actual DB operations via Turso.
-    const originalEnv = process.env.DATABASE_URL
-    process.env.DATABASE_URL = 'file:./placeholder.db'
-    const client = new PrismaClient({ adapter })
-    if (originalEnv !== undefined) {
-      process.env.DATABASE_URL = originalEnv
-    } else {
-      delete process.env.DATABASE_URL
-    }
-    return client
+  if (tursoUrl) {
+    const adapter = new PrismaLibSQL({ url: tursoUrl, authToken: tursoToken })
+    return new PrismaClient({ adapter })
   }
   // Local SQLite: standard PrismaClient (no adapter needed)
   return new PrismaClient()
