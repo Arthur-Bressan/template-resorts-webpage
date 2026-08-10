@@ -114,13 +114,16 @@ export function FallingLeaves() {
       scrollData.direction = direction;
     };
 
+    // Fallback wheel handler (declared outside if/else for cleanup access)
+    let onWheel: ((e: WheelEvent) => void) | null = null;
+
     if (lenis) {
       lenis.on("scroll", onScroll);
     } else {
       // Fallback: approximate velocity from wheel events
       let accDelta = 0;
       let lastTime = 0;
-      const onWheel = (e: WheelEvent) => {
+      onWheel = (e: WheelEvent) => {
         const now = performance.now();
         accDelta += Math.abs(e.deltaY);
         if (now - lastTime > 80) {
@@ -229,7 +232,7 @@ export function FallingLeaves() {
       gsap.ticker.remove(tickerCb);
       if (lenis) {
         lenis.off("scroll", onScroll);
-      } else {
+      } else if (onWheel) {
         window.removeEventListener("wheel", onWheel as EventListener);
       }
       leaves.forEach((l) => {
