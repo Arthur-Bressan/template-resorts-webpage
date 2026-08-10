@@ -390,3 +390,24 @@ Stage Summary:
 - Upload route now dual-mode: Vercel Blob (prod) + local FS (dev)
 - User needs to create Blob store on Vercel dashboard and set BLOB_READ_WRITE_TOKEN
 - Files: src/app/api/admin/upload/route.ts, package.json, .env.example
+
+---
+Task ID: fix-missing-images
+Agent: Main Agent
+Task: Generate all missing images referenced by seed data + favicon
+
+Work Log:
+- Found root cause: seed data references 17 image paths in /images/ but folder was empty
+- Generated 17 AI images using z-ai CLI:
+  - 4 room images: room-master.jpg, room-chalet.jpg, room-garden.jpg, room-Standard.jpg
+  - 4 experience images: experience-trail.jpg, experience-spa.jpg, experience-gastronomy.jpg, experience-boat.jpg
+  - 6 gallery images: gallery-1.jpg through gallery-6.jpg
+  - 3 avatar images: avatar-1.jpg, avatar-2.jpg, avatar-3.jpg
+- Generated favicon.png (eco-lodge leaf icon)
+- Added icons metadata to layout.tsx generateMetadata()
+- Lint clean, pushed to GitHub
+
+Stage Summary:
+- All 17 images + favicon committed (2.7MB total)
+- Pages will now show images correctly on Vercel
+- Favicon.ico 404 resolved (using /favicon.png)
