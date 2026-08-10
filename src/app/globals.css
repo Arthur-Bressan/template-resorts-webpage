@@ -56,6 +56,18 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  /* shadcn/ui variable mappings */
+  --color-popover: var(--color-background);
+  --color-popover-foreground: var(--color-text);
+  --color-card: var(--color-background);
+  --color-card-foreground: var(--color-text);
+  --color-muted: var(--color-surface);
+  --color-muted-foreground: var(--color-text-muted);
+  --color-accent: var(--color-surface);
+  --color-accent-foreground: var(--color-text);
+  --color-destructive: var(--color-error);
+  --color-ring: var(--color-primary);
+  --color-input: var(--color-border);
 }
 
 /* ─── Base ─── */

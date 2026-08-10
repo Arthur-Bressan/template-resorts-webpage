@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useMemo, FormEvent } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useMemo, FormEvent, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   Card,
@@ -57,7 +57,21 @@ function getTodayString() {
   return d.toISOString().split("T")[0];
 }
 
-export default function ReservasPage() {
+export default function ReservasPageWrapper() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-[var(--color-background)]">
+          <Loader2 className="w-8 h-8 animate-spin text-[var(--color-primary)]" />
+        </div>
+      }
+    >
+      <ReservasPage />
+    </Suspense>
+  );
+}
+
+function ReservasPage() {
   const router = useRouter();
   const [rooms, setRooms] = useState<RoomOption[]>([]);
   const [loading, setLoading] = useState(true);
@@ -74,12 +88,23 @@ export default function ReservasPage() {
   const [guestPhone, setGuestPhone] = useState("");
   const [consent, setConsent] = useState(false);
 
+  const searchParams = useSearchParams();
+  const preselectedSlug = searchParams.get("room");
+
   useEffect(() => {
     fetch("/api/rooms/public")
       .then((r) => r.json())
       .then((data: RoomOption[]) => {
         setRooms(data);
-        if (data.length > 0) setRoomId(data[0].id);
+        // Pre-select room from URL query param
+        if (preselectedSlug) {
+          const match = data.find((r) => r.slug === preselectedSlug);
+          if (match) {
+            setRoomId(match.id);
+          }
+        } else if (data.length > 0) {
+          setRoomId(data[0].id);
+        }
       })
       .catch(() => setError("Erro ao carregar quartos."))
       .finally(() => setLoading(false));
