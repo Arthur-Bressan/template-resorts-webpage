@@ -2,13 +2,16 @@
  * Setup script for Turso (SQLite cloud).
  *
  * This script:
- * 1. Generates DDL SQL from the Prisma schema (using prisma migrate diff)
- * 2. Applies the SQL to your Turso database via @libsql/client
- * 3. Optionally seeds the database
+ * 1. Drops all existing tables (if --force flag is used)
+ * 2. Generates DDL SQL from the Prisma schema
+ * 3. Applies the SQL to your Turso database via @libsql/client
+ * 4. Optionally seeds the database
  *
  * Usage:
  *   DATABASE_URL="libsql://your-db.turso.io?auth_token=your-token" npx tsx scripts/setup-turso.ts
+ *   DATABASE_URL="libsql://your-db.turso.io?auth_token=your-token" npx tsx scripts/setup-turso.ts --force
  *   DATABASE_URL="libsql://your-db.turso.io?auth_token=your-token" npx tsx scripts/setup-turso.ts --seed
+ *   DATABASE_URL="libsql://your-db.turso.io?auth_token=your-token" npx tsx scripts/setup-turso.ts --force --seed
  */
 import { execSync } from 'child_process'
 import { createClient } from '@libsql/client'
@@ -32,9 +35,42 @@ function parseLibsqlUrl(url: string) {
 
 const { url: cleanUrl, authToken } = parseLibsqlUrl(databaseUrl)
 
+// All Prisma model table names (must match schema)
+const TABLE_NAMES = [
+  'RoomImage', 'RoomAmenity', 'Reservation',
+  'Room', 'Experience', 'GalleryImage',
+  'Testimonial', 'Faq', 'AboutAmenity',
+  'Distance', 'Direction', 'SensoryConfig',
+  'Stat', 'NewsletterSubscriber', 'ContactSubmission',
+  'NavLink', 'SiteSetting', 'Admin',
+]
+
 async function main() {
   console.log('🔧 Setting up Turso database...')
   console.log(`   URL: ${cleanUrl}`)
+
+  const client = createClient({ url: cleanUrl, authToken })
+
+  // Step 0: Optionally drop existing tables
+  if (process.argv.includes('--force')) {
+    console.log('\n🗑️  Step 0: Dropping existing tables...')
+    try {
+      // Disable FK constraints to allow dropping in any order
+      await client.execute('PRAGMA foreign_keys = OFF')
+      for (const table of TABLE_NAMES) {
+        try {
+          await client.execute(`DROP TABLE IF EXISTS "${table}"`)
+        } catch {
+          // Table might not exist, that's fine
+        }
+      }
+      await client.execute('PRAGMA foreign_keys = ON')
+      console.log(`   ✅ Dropped all tables`)
+    } catch (e: any) {
+      console.error('❌ Failed to drop tables:', e.message)
+      process.exit(1)
+    }
+  }
 
   // Step 1: Generate SQL from Prisma schema
   console.log('\n📋 Step 1: Generating DDL SQL from Prisma schema...')
@@ -52,23 +88,31 @@ async function main() {
 
   // Step 2: Connect to Turso and execute SQL
   console.log('\n🗄️  Step 2: Connecting to Turso and creating tables...')
-  const client = createClient({ url: cleanUrl, authToken })
 
-  try {
-    // Execute each statement separately (libsql doesn't support multiple statements in one execute)
-    const statements = sql
-      .split(';')
-      .map(s => s.trim())
-      .filter(s => s.length > 0)
+  const statements = sql
+    .split(';')
+    .map(s => s.trim())
+    .filter(s => s.length > 0)
 
-    for (let i = 0; i < statements.length; i++) {
-      await client.execute(statements[i])
+  let executed = 0
+  let skipped = 0
+
+  for (const stmt of statements) {
+    try {
+      await client.execute(stmt)
+      executed++
+    } catch (e: any) {
+      const msg = String(e.message || '')
+      if (msg.includes('already exists')) {
+        skipped++
+      } else {
+        console.error(`   ❌ Error executing: ${stmt.substring(0, 80)}...`)
+        console.error(`   ${msg}`)
+        process.exit(1)
+      }
     }
-    console.log(`   ✅ Executed ${statements.length} statements successfully`)
-  } catch (e: any) {
-    console.error('❌ Failed to execute SQL:', e.message)
-    process.exit(1)
   }
+  console.log(`   ✅ Executed ${executed} statements, skipped ${skipped} (already exist)`)
 
   // Step 3: Optionally seed
   if (process.argv.includes('--seed')) {
@@ -88,9 +132,8 @@ async function main() {
 
   console.log('\n✅ Turso database setup complete!')
   console.log('\n💡 Next steps:')
-  console.log('   1. Your database is ready at Turso')
-  console.log('   2. Set the same DATABASE_URL in your Vercel environment variables')
-  console.log('   3. Deploy with: vercel --prod')
+  console.log('   1. Set the same DATABASE_URL in your Vercel environment variables')
+  console.log('   2. Deploy with: vercel --prod')
 }
 
 main().catch(e => {
