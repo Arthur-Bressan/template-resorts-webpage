@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Analytics } from "@vercel/analytics/next";
 import { Fraunces, Nunito_Sans } from "next/font/google";
 import { CustomCursor } from "@/components/layout/CustomCursor";
 import { CookieConsent } from "@/components/layout/CookieConsent";
@@ -83,6 +84,7 @@ export default async function RootLayout({
         {children}
         <CookieConsent />
         {settings && <WhatsAppFloat siteSettings={settings} />}
+        <Analytics />
       </body>
     </html>
   );
