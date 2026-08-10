@@ -19,11 +19,20 @@ function GalleryItem({ img, idx, onClick }: { img: GalleryImage; idx: number; on
       className={`${img.span} relative rounded-xl overflow-hidden group cursor-pointer focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/50 focus:ring-offset-2 bg-[var(--color-surface-alt)]`}
     >
       <div className="w-full h-full flex items-center justify-center">
-        {/* Skeleton placeholder */}
-        <div className="flex flex-col items-center gap-2 text-[var(--color-text-muted)] transition-transform duration-700 ease-out group-hover:scale-110">
-          <ImageIcon className="w-8 h-8 opacity-20 group-hover:opacity-40 transition-opacity duration-500" />
-          <span className="text-xs opacity-30">{img.alt.split(" ").slice(0, 3).join(" ")}</span>
-        </div>
+        {/* Gallery image */}
+        {img.src ? (
+          <img
+            src={img.src}
+            alt={img.alt}
+            className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
+            loading="lazy"
+          />
+        ) : (
+          <div className="flex flex-col items-center gap-2 text-[var(--color-text-muted)] transition-transform duration-700 ease-out group-hover:scale-110">
+            <ImageIcon className="w-8 h-8 opacity-20 group-hover:opacity-40 transition-opacity duration-500" />
+            <span className="text-xs opacity-30">{img.alt.split(" ").slice(0, 3).join(" ")}</span>
+          </div>
+        )}
 
         {/* Hover overlay */}
         <div className="absolute inset-0 bg-[var(--color-primary-dark)]/0 group-hover:bg-[var(--color-primary-dark)]/30 transition-colors duration-500" />
@@ -129,10 +138,18 @@ export function Gallery({ galleryImages }: GalleryProps) {
             <ChevronRight className="w-5 h-5" />
           </button>
           <div className="flex items-center justify-center w-full max-w-4xl aspect-video rounded-xl bg-[var(--color-surface)]">
-            <div className="flex flex-col items-center gap-3 text-[var(--color-text-muted)]">
-              <ImageIcon className="w-16 h-16 opacity-30" />
-              <span className="text-sm">{galleryImages[lightbox].alt}</span>
-            </div>
+            {galleryImages[lightbox].src ? (
+              <img
+                src={galleryImages[lightbox].src}
+                alt={galleryImages[lightbox].alt}
+                className="w-full h-full object-contain rounded-xl"
+              />
+            ) : (
+              <div className="flex flex-col items-center gap-3 text-[var(--color-text-muted)]">
+                <ImageIcon className="w-16 h-16 opacity-30" />
+                <span className="text-sm">{galleryImages[lightbox].alt}</span>
+              </div>
+            )}
           </div>
         </div>
       )}

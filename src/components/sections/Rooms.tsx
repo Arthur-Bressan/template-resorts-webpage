@@ -22,11 +22,20 @@ function RoomCard({ room }: { room: Room }) {
           href={`/quartos/${room.slug}`}
           className="relative h-64 block overflow-hidden bg-[var(--color-surface-alt)]"
         >
-          {/* Parallax image placeholder — shifts on hover */}
-          <div className="flex flex-col items-center gap-2 text-[var(--color-text-muted)] transition-transform duration-700 ease-out group-hover:scale-110 group-hover:-translate-y-3">
-            <ImageIcon className="w-10 h-10 opacity-30 group-hover:opacity-50 transition-opacity duration-500" />
-            <span className="text-xs opacity-40">{room.name}</span>
-          </div>
+          {/* Room image */}
+          {room.images[0]?.src ? (
+            <img
+              src={room.images[0].src}
+              alt={room.images[0].alt || room.name}
+              className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110 group-hover:-translate-y-3"
+              loading="lazy"
+            />
+          ) : (
+            <div className="flex flex-col items-center gap-2 text-[var(--color-text-muted)] transition-transform duration-700 ease-out group-hover:scale-110 group-hover:-translate-y-3">
+              <ImageIcon className="w-10 h-10 opacity-30 group-hover:opacity-50 transition-opacity duration-500" />
+              <span className="text-xs opacity-40">{room.name}</span>
+            </div>
+          )}
           {/* Overlay gradient on hover */}
           <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-primary-dark)]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 

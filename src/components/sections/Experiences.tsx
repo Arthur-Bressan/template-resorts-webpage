@@ -16,12 +16,21 @@ function ExperienceCard({ exp, idx }: { exp: Experience; idx: number }) {
       data-cursor-label="Detalhes"
       className="group relative rounded-2xl overflow-hidden bg-[var(--color-background)] shadow-md transition-shadow duration-500 hover:shadow-xl"
     >
-        {/* Image skeleton */}
+        {/* Image area */}
         <div className="relative h-52 overflow-hidden bg-[var(--color-surface-alt)] flex items-center justify-center">
-          <div className="flex flex-col items-center gap-2 text-[var(--color-text-muted)] transition-transform duration-700 ease-out group-hover:scale-110 group-hover:-translate-y-2">
-            <ImageIcon className="w-8 h-8 opacity-30 group-hover:opacity-50 transition-opacity duration-500" />
-            <span className="text-xs opacity-40">{exp.title}</span>
-          </div>
+          {exp.image ? (
+            <img
+              src={exp.image}
+              alt={exp.title}
+              className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110 group-hover:-translate-y-2"
+              loading="lazy"
+            />
+          ) : (
+            <div className="flex flex-col items-center gap-2 text-[var(--color-text-muted)] transition-transform duration-700 ease-out group-hover:scale-110 group-hover:-translate-y-2">
+              <ImageIcon className="w-8 h-8 opacity-30 group-hover:opacity-50 transition-opacity duration-500" />
+              <span className="text-xs opacity-40">{exp.title}</span>
+            </div>
+          )}
           {/* Bottom accent line on hover */}
           <div className="absolute bottom-0 left-0 right-0 h-1 bg-[var(--color-accent)] scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left" />
 

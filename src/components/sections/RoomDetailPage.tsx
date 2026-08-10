@@ -119,10 +119,18 @@ function GallerySection({ room }: { room: Room }) {
         <div
           className="reveal rounded-2xl overflow-hidden bg-[var(--color-surface)] aspect-[16/9] md:aspect-[21/9] flex items-center justify-center mb-4"
         >
-          <div className="flex flex-col items-center gap-3 text-[var(--color-text-muted)]">
-            <ImageIcon className="w-16 h-16 opacity-20" />
-            <span className="text-sm opacity-40">{room.images[activeIdx]?.alt || "Foto principal"}</span>
-          </div>
+          {room.images[activeIdx]?.src ? (
+            <img
+              src={room.images[activeIdx].src}
+              alt={room.images[activeIdx].alt || "Foto principal"}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="flex flex-col items-center gap-3 text-[var(--color-text-muted)]">
+              <ImageIcon className="w-16 h-16 opacity-20" />
+              <span className="text-sm opacity-40">{room.images[activeIdx]?.alt || "Foto principal"}</span>
+            </div>
+          )}
         </div>
 
         {/* Thumbnails */}
@@ -138,10 +146,14 @@ function GallerySection({ room }: { room: Room }) {
                   : "border-transparent opacity-60 hover:opacity-100"
               }`}
             >
-              <div className="flex flex-col items-center gap-1 text-[var(--color-text-muted)]">
-                <ImageIcon className="w-5 h-5 opacity-20" />
-                <span className="text-[10px] opacity-30">Foto {idx + 1}</span>
-              </div>
+              {img.src ? (
+                <img src={img.src} alt={img.alt} className="w-full h-full object-cover" loading="lazy" />
+              ) : (
+                <div className="flex flex-col items-center gap-1 text-[var(--color-text-muted)]">
+                  <ImageIcon className="w-5 h-5 opacity-20" />
+                  <span className="text-[10px] opacity-30">Foto {idx + 1}</span>
+                </div>
+              )}
             </button>
           ))}
         </div>
@@ -316,12 +328,16 @@ function AlsoLike({ currentSlug, rooms }: { currentSlug: string; rooms: Room[] }
               data-stagger-child
               className="group rounded-2xl overflow-hidden bg-[var(--color-surface)] hover:shadow-lg transition-all duration-500 hover:-translate-y-1"
             >
-              {/* Skeleton */}
+              {/* Image */}
               <div className="relative h-48 overflow-hidden bg-[var(--color-surface-alt)] flex items-center justify-center">
-                <div className="flex flex-col items-center gap-2 text-[var(--color-text-muted)]">
-                  <ImageIcon className="w-8 h-8 opacity-20" />
-                  <span className="text-xs opacity-30">{room.name}</span>
-                </div>
+                {room.images[0]?.src ? (
+                  <img src={room.images[0].src} alt={room.name} className="absolute inset-0 w-full h-full object-cover" loading="lazy" />
+                ) : (
+                  <div className="flex flex-col items-center gap-2 text-[var(--color-text-muted)]">
+                    <ImageIcon className="w-8 h-8 opacity-20" />
+                    <span className="text-xs opacity-30">{room.name}</span>
+                  </div>
+                )}
                 <div className="absolute bottom-3 right-3 glass-strong rounded-full px-2.5 py-1">
                   <span className="text-xs font-semibold text-[var(--color-primary-dark)]">R$ {room.price}</span>
                 </div>
