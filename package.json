@@ -7,7 +7,12 @@
     "dev": "next dev -p 3000",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "db:generate": "npx prisma generate",
+    "db:push": "npx prisma db push",
+    "db:seed": "npx tsx prisma/seed.ts",
+    "db:setup": "npx prisma generate && npx prisma db push && npx tsx prisma/seed.ts",
+    "turso:setup": "npx tsx scripts/setup-turso.ts --seed"
   },
   "dependencies": {
     "@libsql/client": "^0.17.4",
