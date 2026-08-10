@@ -325,3 +325,20 @@ Stage Summary:
 - turso:setup script now always drops tables first (--force flag)
 - Site verified working via curl (HTTP 200) and earlier agent browser session
 
+---
+Task ID: 2
+Agent: Main Agent
+Task: Fix PrismaClient initialization error with libsql:// URL on Vercel
+
+Work Log:
+- Root cause: PrismaClient constructor validates datasource URL from schema even when using adapter. With `provider = "sqlite"` and `libsql://` URL, it throws `PrismaClientInitializationError` at module import time (before any try/catch can catch it)
+- Fix: Added `datasourceUrl: "file:./placeholder.db"` to PrismaClient constructor when using libsql adapter. This passes Prisma schema validation (valid file: URL for sqlite provider) while the adapter handles actual queries
+- Applied same fix to both `src/lib/db.ts` and `prisma/seed.ts`
+- Verified lint passes (0 errors)
+- Verified dev server responds HTTP 200
+
+Stage Summary:
+- Key fix: `new PrismaClient({ adapter, datasourceUrl: "file:./placeholder.db" })` prevents URL validation failure
+- Both db.ts and seed.ts updated with this pattern
+- Build should now succeed on Vercel with libsql:// DATABASE_URL
+

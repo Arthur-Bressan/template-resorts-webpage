@@ -17,11 +17,16 @@ function parseLibsqlUrl(url: string): { url: string; authToken?: string } {
   return { url }
 }
 
-function createPrismaClient() {
+function createPrismaClient(): PrismaClient {
   if (databaseUrl.startsWith('libsql://')) {
     const { url, authToken } = parseLibsqlUrl(databaseUrl)
     const adapter = new PrismaLibSQL({ url, authToken })
-    return new PrismaClient({ adapter })
+    // datasourceUrl must be a valid file: URL to pass Prisma's schema validation
+    // (provider = "sqlite" only accepts file: URLs). The adapter handles actual queries.
+    return new PrismaClient({
+      adapter,
+      datasourceUrl: 'file:./placeholder.db',
+    })
   }
   // Local SQLite: standard PrismaClient (no adapter needed)
   return new PrismaClient()
