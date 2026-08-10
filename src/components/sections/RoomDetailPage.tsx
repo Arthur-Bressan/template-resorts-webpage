@@ -179,7 +179,7 @@ function DescriptionSection({ room }: { room: Room }) {
                 const Icon = iconMap[a.icon] || CheckCircle2;
                 return (
                   <div
-                    key={a.name}
+                    key={a.id}
                     data-stagger-child
                     className="flex items-center gap-3 p-3 rounded-xl bg-[var(--color-background)]"
                   >

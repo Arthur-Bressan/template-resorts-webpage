@@ -222,6 +222,9 @@ async function main() {
       update: {},
       create: { ...roomData },
     })
+    // Delete old images/amenities before recreating (idempotent seed)
+    await prisma.roomImage.deleteMany({ where: { roomId: room.id } })
+    await prisma.roomAmenity.deleteMany({ where: { roomId: room.id } })
     for (const img of images) {
       await prisma.roomImage.create({ data: { ...img, roomId: room.id } })
       totalImages++

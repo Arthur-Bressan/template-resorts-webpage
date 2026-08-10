@@ -63,7 +63,7 @@ function RoomCard({ room }: { room: Room }) {
           <div className="flex flex-wrap gap-2 mb-5">
             {room.amenities.slice(0, 4).map((a, i) => (
               <span
-                key={a.name}
+                key={a.id}
                 className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[var(--color-surface)] text-xs text-[var(--color-text-muted)] transition-all duration-300 ease-out group-hover:translate-y-[-2px] group-hover:shadow-sm"
                 style={{ transitionDelay: `${i * 40}ms` }}
               >
