@@ -27,7 +27,7 @@ export function setAdminUser(user: Record<string, unknown>) {
   localStorage.setItem('admin_user', JSON.stringify(user))
 }
 
-async function adminFetch(path: string, options: RequestInit = {}) {
+async function adminFetch(path: string, options: RequestInit = {}, skipAuthRedirect = false) {
   const token = getToken()
   const res = await fetch(`${API}${path}`, {
     ...options,
@@ -37,7 +37,7 @@ async function adminFetch(path: string, options: RequestInit = {}) {
       ...options.headers,
     },
   })
-  if (res.status === 401) {
+  if (res.status === 401 && !skipAuthRedirect) {
     clearToken()
     window.location.href = '/admin/login'
     return
@@ -49,7 +49,7 @@ async function adminFetch(path: string, options: RequestInit = {}) {
 export const adminApi = {
   auth: {
     login: (email: string, password: string) =>
-      adminFetch('/auth', { method: 'POST', body: JSON.stringify({ email, password }) }),
+      adminFetch('/auth', { method: 'POST', body: JSON.stringify({ email, password }) }, true),
     getSession: () => adminFetch('/auth'),
   },
   settings: {

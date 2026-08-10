@@ -28,8 +28,9 @@ export default function AdminLoginPage() {
         setAdminUser(res.user || { email, name: email })
         router.push('/admin')
       }
-    } catch {
-      setError('Email ou senha incorretos')
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Erro desconhecido'
+      setError(`Erro: ${msg}`)
     } finally {
       setLoading(false)
     }
