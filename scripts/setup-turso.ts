@@ -119,6 +119,31 @@ async function main() {
   }
   console.log(`   ✅ Executed ${executed} statements, skipped ${skipped} (already exist)`)
 
+  // Step 2.5: Migrate — add new columns to existing tables
+  console.log('\n🔄 Step 2b: Checking for new columns to add...')
+  const migrations: { table: string; column: string; type: string; default: string }[] = [
+    { table: 'SiteSetting', column: 'heroImage', type: 'TEXT', default: "'/images/hero.jpg'" },
+  ]
+
+  let added = 0
+  for (const m of migrations) {
+    try {
+      // Check if column already exists
+      const info = await client.execute(`PRAGMA table_info("${m.table}")`)
+      const colExists = info.rows.some((r: any) => r.name === m.column)
+      if (colExists) {
+        console.log(`   ⏭️  Column "${m.column}" already exists in "${m.table}"`)
+        continue
+      }
+      await client.execute(`ALTER TABLE "${m.table}" ADD COLUMN "${m.column}" ${m.type} NOT NULL DEFAULT ${m.default}`)
+      console.log(`   ✅ Added column "${m.column}" to "${m.table}"`)
+      added++
+    } catch (e: any) {
+      console.error(`   ⚠️  Could not add "${m.column}": ${e.message}`)
+    }
+  }
+  if (added === 0) console.log('   (no new columns needed)')
+
   // Step 3: Optionally seed
   if (process.argv.includes('--seed')) {
     console.log('\n🌱 Step 3: Seeding database...')
