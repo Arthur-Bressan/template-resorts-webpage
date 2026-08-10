@@ -10,12 +10,13 @@ interface HeroProps {
 
 export function Hero({ siteSettings }: HeroProps) {
   const sectionRef = useRef<HTMLElement>(null);
-  const imageRef = useRef<HTMLDivElement>(null);
+  const imageRef = useRef<HTMLImageElement>(null);
+  const imageWrapperRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!sectionRef.current || !imageRef.current) return;
+    if (!sectionRef.current || !imageWrapperRef.current) return;
     const section = sectionRef.current;
-    const image = imageRef.current;
+    const wrapper = imageWrapperRef.current;
     const reducedMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)"
     ).matches;
@@ -34,7 +35,7 @@ export function Hero({ siteSettings }: HeroProps) {
       pos.x += (targetX - pos.x) * 0.05;
       pos.y += (targetY - pos.y) * 0.05;
 
-      image.style.transform = `translate(${pos.x}px, ${pos.y}px) scale(${currentZoom})`;
+      wrapper.style.transform = `translate(${pos.x}px, ${pos.y}px) scale(${currentZoom})`;
       rafId = requestAnimationFrame(animatePan);
     }
 
@@ -104,36 +105,38 @@ export function Hero({ siteSettings }: HeroProps) {
   const handleExplore = () =>
     document.querySelector("#about")?.scrollIntoView({ behavior: "smooth" });
 
+  const heroSrc =
+    siteSettings.heroImage || "/images/hero.jpg";
+  const cacheBuster =
+    siteSettings.updatedAt instanceof Date
+      ? siteSettings.updatedAt.getTime()
+      : Date.now();
+
   return (
     <section
       ref={sectionRef}
       id="hero"
       className="relative min-h-screen flex items-center justify-center overflow-hidden cursor-crosshair"
     >
-      {/* Background Image with parallax + zoom */}
-      <div className="absolute inset-[-5%]">
-        <div
+      {/* Background Image — native <img> for full quality */}
+      <div
+        ref={imageWrapperRef}
+        className="absolute inset-[-5%]"
+        style={{ transform: "translate(0px, 0px) scale(1.15)" }}
+      >
+        <img
           ref={imageRef}
-          className="absolute inset-0 bg-cover bg-center will-change-transform"
-          style={{
-            backgroundImage: `url('${siteSettings.heroImage || '/images/hero.jpg'}?v=${siteSettings.updatedAt instanceof Date ? siteSettings.updatedAt.getTime() : Date.now()}')`,
-            transform: "translate(0px, 0px) scale(1.15)",
-          }}
+          src={`${heroSrc}?v=${cacheBuster}`}
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 w-full h-full object-cover"
+          draggable={false}
         />
       </div>
 
       {/* Dark gradient overlays for text readability */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/20 to-black/60" />
-      <div className="absolute inset-0 bg-gradient-to-r from-black/30 via-transparent to-black/30" />
-
-      {/* Subtle vignette */}
-      <div
-        className="absolute inset-0"
-        style={{
-          background:
-            "radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.4) 100%)",
-        }}
-      />
+      <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/15 to-black/50" />
+      <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-black/20" />
 
       {/* Content */}
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center py-32">
