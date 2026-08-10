@@ -21,12 +21,18 @@ function createPrismaClient(): PrismaClient {
   if (databaseUrl.startsWith('libsql://')) {
     const { url, authToken } = parseLibsqlUrl(databaseUrl)
     const adapter = new PrismaLibSQL({ url, authToken })
-    // datasourceUrl must be a valid file: URL to pass Prisma's schema validation
-    // (provider = "sqlite" only accepts file: URLs). The adapter handles actual queries.
-    return new PrismaClient({
-      adapter,
-      datasourceUrl: 'file:./placeholder.db',
-    })
+    // Prisma validates DATABASE_URL against provider = "sqlite" at construction time.
+    // We must temporarily override the env var to a valid file: URL so validation passes.
+    // The adapter handles all actual DB operations via Turso.
+    const originalEnv = process.env.DATABASE_URL
+    process.env.DATABASE_URL = 'file:./placeholder.db'
+    const client = new PrismaClient({ adapter })
+    if (originalEnv !== undefined) {
+      process.env.DATABASE_URL = originalEnv
+    } else {
+      delete process.env.DATABASE_URL
+    }
+    return client
   }
   // Local SQLite: standard PrismaClient (no adapter needed)
   return new PrismaClient()

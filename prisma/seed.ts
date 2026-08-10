@@ -17,10 +17,15 @@ function createPrismaClient() {
   if (databaseUrl.startsWith('libsql://')) {
     const { url, authToken } = parseLibsqlUrl(databaseUrl)
     const adapter = new PrismaLibSQL({ url, authToken })
-    return new PrismaClient({
-      adapter,
-      datasourceUrl: 'file:./placeholder.db',
-    })
+    const originalEnv = process.env.DATABASE_URL
+    process.env.DATABASE_URL = 'file:./placeholder.db'
+    const client = new PrismaClient({ adapter })
+    if (originalEnv !== undefined) {
+      process.env.DATABASE_URL = originalEnv
+    } else {
+      delete process.env.DATABASE_URL
+    }
+    return client
   }
   return new PrismaClient()
 }
