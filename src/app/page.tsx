@@ -1,5 +1,4 @@
 import { SmoothScrollProvider } from "@/components/layout/SmoothScrollProvider";
-import { FallingLeaves } from "@/components/layout/FallingLeaves";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Hero } from "@/components/sections/Hero";
@@ -30,7 +29,6 @@ export default async function Home() {
 
   return (
     <SmoothScrollProvider>
-      <FallingLeaves />
       <div className="min-h-screen flex flex-col">
         <Header siteSettings={settings} navLinks={links} />
 
