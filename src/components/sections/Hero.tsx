@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import Image from "next/image";
 import { gsap, ScrollTrigger } from "@/components/layout/SmoothScrollProvider";
 import type { SiteSettings } from "@/lib/data";
 
@@ -10,7 +11,6 @@ interface HeroProps {
 
 export function Hero({ siteSettings }: HeroProps) {
   const sectionRef = useRef<HTMLElement>(null);
-  const imageRef = useRef<HTMLImageElement>(null);
   const imageWrapperRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -107,10 +107,6 @@ export function Hero({ siteSettings }: HeroProps) {
 
   const heroSrc =
     siteSettings.heroImage || "/images/hero.jpg";
-  const cacheBuster =
-    siteSettings.updatedAt instanceof Date
-      ? siteSettings.updatedAt.getTime()
-      : Date.now();
 
   return (
     <section
@@ -118,18 +114,21 @@ export function Hero({ siteSettings }: HeroProps) {
       id="hero"
       className="relative min-h-screen flex items-center justify-center overflow-hidden cursor-crosshair"
     >
-      {/* Background Image — native <img> for full quality */}
+      {/* Background Image — Next.js Image for automatic optimization (AVIF/WebP) */}
       <div
         ref={imageWrapperRef}
         className="absolute inset-[-5%]"
         style={{ transform: "translate(0px, 0px) scale(1.15)" }}
       >
-        <img
-          ref={imageRef}
-          src={`${heroSrc}?v=${cacheBuster}`}
+        <Image
+          src={heroSrc}
           alt=""
           aria-hidden="true"
-          className="absolute inset-0 w-full h-full object-cover"
+          fill
+          priority
+          quality={90}
+          sizes="100vw"
+          className="object-cover"
           draggable={false}
         />
       </div>

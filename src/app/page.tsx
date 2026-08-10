@@ -19,6 +19,8 @@ export const dynamic = 'force-dynamic';
 export default async function Home() {
   const { settings, links, stats } = await getSiteConfig();
 
+  const heroSrc = settings.heroImage || "/images/hero.jpg";
+
   const [rooms, experiences, galleryImages, testimonials, faqItems] = await Promise.all([
     getRooms(),
     getExperiences(),
@@ -28,7 +30,9 @@ export default async function Home() {
   ]);
 
   return (
-    <SmoothScrollProvider>
+    <>
+      <link rel="preload" as="image" href={heroSrc} />
+      <SmoothScrollProvider>
       <div className="min-h-screen flex flex-col">
         <Header siteSettings={settings} navLinks={links} />
 
@@ -47,6 +51,7 @@ export default async function Home() {
 
         <Footer siteSettings={settings} stats={stats} />
       </div>
-    </SmoothScrollProvider>
+      </SmoothScrollProvider>
+    </>
   );
 }
