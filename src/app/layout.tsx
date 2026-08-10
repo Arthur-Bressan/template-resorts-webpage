@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { Fraunces, Nunito_Sans } from "next/font/google";
 import { CustomCursor } from "@/components/layout/CustomCursor";
+import { CookieConsent } from "@/components/layout/CookieConsent";
+import { WhatsAppFloat } from "@/components/ui/WhatsAppFloat";
+import { db } from "@/lib/db";
 import "./globals.css";
 
 const fraunces = Fraunces({
@@ -17,36 +20,42 @@ const nunitoSans = Nunito_Sans({
   weight: ["300", "400", "500", "600", "700"],
 });
 
-export const metadata: Metadata = {
-  title: "Refúgio Mata Atlântica — Pousada & Spa",
-  description:
-    "Descubra o Refúgio Mata Atlântica: uma pousada premium entre a floresta. Suítes com vista panorâmica, spa natural, trilhas e gastronomia local. Desconecte-se da rotina e reconecte-se com a natureza.",
-  keywords: [
-    "pousada",
-    "hospedagem",
-    "Mata Atlântica",
-    "natureza",
-    "spa",
-    "eco-hotel",
-    "refúgio",
-    "férias",
-    "trilhas",
-    "gastronomia",
-  ],
-  authors: [{ name: "Refúgio Mata Atlântica" }],
-  openGraph: {
-    title: "Refúgio Mata Atlântica — Pousada & Spa",
-    description:
-      "Descubra o Refúgio Mata Atlântica: uma pousada premium entre a floresta. Desconecte-se da rotina e reconecte-se com a natureza.",
-    type: "website",
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await db.siteSetting.findUnique({ where: { id: 'main' } });
+  const title = settings?.metaTitle || settings?.name || "Refúgio Mata Atlântica";
+  const description = settings?.metaDescription || settings?.description || "Pousada premium na Mata Atlântica";
 
-export default function RootLayout({
+  return {
+    title: `${title} — Pousada & Spa`,
+    description,
+    keywords: [
+      "pousada",
+      "hospedagem",
+      "Mata Atlântica",
+      "natureza",
+      "spa",
+      "eco-hotel",
+      "refúgio",
+      "férias",
+      "trilhas",
+      "gastronomia",
+    ],
+    authors: [{ name: settings?.name || "Refúgio Mata Atlântica" }],
+    openGraph: {
+      title: `${title} — Pousada & Spa`,
+      description,
+      type: "website",
+    },
+  };
+}
+
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const settings = await db.siteSetting.findUnique({ where: { id: 'main' } });
+
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <body
@@ -54,6 +63,8 @@ export default function RootLayout({
       >
         <CustomCursor />
         {children}
+        <CookieConsent />
+        {settings && <WhatsAppFloat siteSettings={settings} />}
       </body>
     </html>
   );

@@ -2,11 +2,11 @@
 
 import { useReveal } from "@/hooks/useReveal";
 import { useCardTilt } from "@/hooks/useCardTilt";
-import { galleryImages } from "@/data/site";
 import { ImageIcon, X, ChevronLeft, ChevronRight, Expand } from "lucide-react";
 import { useState } from "react";
+import type { GalleryImage } from "@/lib/data";
 
-function GalleryItem({ img, idx, onClick }: { img: (typeof galleryImages)[0]; idx: number; onClick: () => void }) {
+function GalleryItem({ img, idx, onClick }: { img: GalleryImage; idx: number; onClick: () => void }) {
   const tiltRef = useCardTilt<HTMLElement>();
 
   return (
@@ -42,7 +42,11 @@ function GalleryItem({ img, idx, onClick }: { img: (typeof galleryImages)[0]; id
   );
 }
 
-export function Gallery() {
+interface GalleryProps {
+  galleryImages: GalleryImage[];
+}
+
+export function Gallery({ galleryImages }: GalleryProps) {
   const ref = useReveal();
   const [lightbox, setLightbox] = useState<number | null>(null);
 
@@ -85,7 +89,7 @@ export function Gallery() {
           >
             {galleryImages.map((img, idx) => (
               <GalleryItem
-                key={idx}
+                key={img.id}
                 img={img}
                 idx={idx}
                 onClick={() => setLightbox(idx)}

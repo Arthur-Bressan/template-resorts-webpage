@@ -2,10 +2,10 @@
 
 import { useReveal } from "@/hooks/useReveal";
 import { useCardTilt } from "@/hooks/useCardTilt";
-import { testimonials } from "@/data/site";
 import { Star, Quote } from "lucide-react";
+import type { Testimonial } from "@/lib/data";
 
-function TestimonialCard({ t }: { t: (typeof testimonials)[0] }) {
+function TestimonialCard({ t }: { t: Testimonial }) {
   const tiltRef = useCardTilt<HTMLElement>();
 
   return (
@@ -56,7 +56,11 @@ function TestimonialCard({ t }: { t: (typeof testimonials)[0] }) {
   );
 }
 
-export function Testimonials() {
+interface TestimonialsProps {
+  testimonials: Testimonial[];
+}
+
+export function Testimonials({ testimonials }: TestimonialsProps) {
   const ref = useReveal();
 
   return (

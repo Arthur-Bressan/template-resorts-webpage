@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { rooms } from "@/data/site";
-import { notFound } from "next/navigation";
+import { getRoomBySlug, getRooms } from "@/lib/data";
+
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -8,7 +8,7 @@ type Props = {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const room = rooms.find((r) => r.slug === slug);
+  const room = await getRoomBySlug(slug);
   if (!room) return { title: "Acomodação não encontrada" };
 
   return {
@@ -23,10 +23,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export async function generateStaticParams() {
+  const rooms = await getRooms();
   return rooms.map((room) => ({ slug: room.slug }));
 }
 
 export default async function QuartoLayout({ children }: { children: React.ReactNode }) {
-  // Will be validated in the page component
   return <>{children}</>;
 }

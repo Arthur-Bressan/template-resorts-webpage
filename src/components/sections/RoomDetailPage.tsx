@@ -2,8 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useReveal } from "@/hooks/useReveal";
-import { rooms } from "@/data/site";
-import { siteConfig } from "@/data/site";
+import type { Room, Room as RoomType, SiteSettings } from "@/lib/data";
 import { gsap } from "@/components/layout/SmoothScrollProvider";
 import Link from "next/link";
 import {
@@ -31,11 +30,11 @@ import {
 
 /* ─── Icon map ─── */
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
-  BedDouble, Wifi, TreePine, Mountain, Flame, Dog, Flower2, Wine,
+  BedDouble, Wifi, TreePine, Mountain, Flame, Dog, Flower2, Wine, ShowerHead: CheckCircle2, AirVent: CheckCircle2, Sparkles: CheckCircle2, Bath: CheckCircle2, Trees: TreePine, DoorOpen: CheckCircle2, Sun: CheckCircle2, Shirt: CheckCircle2, CookingPot: CheckCircle2,
 };
 
 /* ─── Breadcrumb Hero ─── */
-function BreadcrumbHero({ room }: { room: typeof rooms[0] }) {
+function BreadcrumbHero({ room }: { room: Room }) {
   const ref = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -105,7 +104,7 @@ function BreadcrumbHero({ room }: { room: typeof rooms[0] }) {
 }
 
 /* ─── Gallery ─── */
-function GallerySection({ room }: { room: typeof rooms[0] }) {
+function GallerySection({ room }: { room: Room }) {
   const ref = useReveal();
   const [activeIdx, setActiveIdx] = useState(0);
 
@@ -122,15 +121,15 @@ function GallerySection({ room }: { room: typeof rooms[0] }) {
         >
           <div className="flex flex-col items-center gap-3 text-[var(--color-text-muted)]">
             <ImageIcon className="w-16 h-16 opacity-20" />
-            <span className="text-sm opacity-40">{room.gallery[activeIdx]?.alt || "Foto principal"}</span>
+            <span className="text-sm opacity-40">{room.images[activeIdx]?.alt || "Foto principal"}</span>
           </div>
         </div>
 
         {/* Thumbnails */}
         <div className="flex gap-3 overflow-x-auto pb-2" data-stagger>
-          {room.gallery.map((img, idx) => (
+          {room.images.map((img, idx) => (
             <button
-              key={idx}
+              key={img.id}
               data-stagger-child
               onClick={() => setActiveIdx(idx)}
               className={`shrink-0 w-24 h-24 md:w-32 md:h-32 rounded-xl overflow-hidden bg-[var(--color-surface)] flex items-center justify-center transition-all duration-300 border-2 ${
@@ -152,7 +151,7 @@ function GallerySection({ room }: { room: typeof rooms[0] }) {
 }
 
 /* ─── Description ─── */
-function DescriptionSection({ room }: { room: typeof rooms[0] }) {
+function DescriptionSection({ room }: { room: Room }) {
   const ref = useReveal();
 
   return (
@@ -200,7 +199,7 @@ function DescriptionSection({ room }: { room: typeof rooms[0] }) {
 }
 
 /* ─── Info Strip ─── */
-function InfoStrip({ room }: { room: typeof rooms[0] }) {
+function InfoStrip({ room }: { room: Room }) {
   return (
     <section className="bg-[var(--color-background)] border-y border-[var(--color-border)]">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
@@ -226,7 +225,7 @@ function InfoStrip({ room }: { room: typeof rooms[0] }) {
 }
 
 /* ─── Policy ─── */
-function PolicySection({ room }: { room: typeof rooms[0] }) {
+function PolicySection({ room }: { room: Room }) {
   return (
     <section className="bg-[var(--color-surface)]">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
@@ -249,7 +248,7 @@ function PolicySection({ room }: { room: typeof rooms[0] }) {
 }
 
 /* ─── Price CTA ─── */
-function PriceCTA({ room }: { room: typeof rooms[0] }) {
+function PriceCTA({ room, siteSettings }: { room: Room; siteSettings: SiteSettings }) {
   return (
     <section className="relative py-28 overflow-hidden">
       <div className="absolute inset-0 bg-[var(--color-primary-dark)]" />
@@ -278,14 +277,14 @@ function PriceCTA({ room }: { room: typeof rooms[0] }) {
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
           <a
-            href={`tel:${siteConfig.phone}`}
+            href={`tel:${siteSettings.phone}`}
             className="inline-flex items-center gap-2.5 px-8 py-4 rounded-full bg-[var(--color-accent)] text-[var(--color-primary-dark)] font-semibold text-base hover:bg-[var(--color-accent)]/90 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 min-w-[220px] justify-center"
           >
             <Phone className="w-4 h-4" />
             Reservar Agora
           </a>
           <a
-            href={`mailto:${siteConfig.email}?subject=Reserva%20-%20${room.name}`}
+            href={`mailto:${siteSettings.email}?subject=Reserva%20-%20${room.name}`}
             className="inline-flex items-center gap-2.5 px-8 py-4 rounded-full bg-white/15 backdrop-blur-sm text-white font-medium text-base border border-white/25 hover:bg-white/25 transition-all min-w-[220px] justify-center"
           >
             <Mail className="w-4 h-4" />
@@ -298,7 +297,7 @@ function PriceCTA({ room }: { room: typeof rooms[0] }) {
 }
 
 /* ─── You Might Also Like ─── */
-function AlsoLike({ currentSlug }: { currentSlug: string }) {
+function AlsoLike({ currentSlug, rooms }: { currentSlug: string; rooms: Room[] }) {
   const ref = useReveal();
   const others = rooms.filter((r) => r.slug !== currentSlug).slice(0, 3);
 
@@ -362,9 +361,13 @@ function NotFound() {
 }
 
 /* ─── Page ─── */
-export default function RoomDetailPage({ slug }: { slug: string }) {
-  const room = rooms.find((r) => r.slug === slug);
+interface RoomDetailPageProps {
+  room: Room | null;
+  allRooms: Room[];
+  siteSettings: SiteSettings;
+}
 
+export default function RoomDetailPage({ room, allRooms, siteSettings }: RoomDetailPageProps) {
   if (!room) return <NotFound />;
 
   return (
@@ -374,8 +377,8 @@ export default function RoomDetailPage({ slug }: { slug: string }) {
       <DescriptionSection room={room} />
       <InfoStrip room={room} />
       <PolicySection room={room} />
-      <PriceCTA room={room} />
-      <AlsoLike currentSlug={room.slug} />
+      <PriceCTA room={room} siteSettings={siteSettings} />
+      <AlsoLike currentSlug={room.slug} rooms={allRooms} />
     </>
   );
 }

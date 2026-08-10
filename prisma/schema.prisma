@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -13,20 +7,214 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
+// ─── ADMIN AUTH ───
+model Admin {
   id        String   @id @default(cuid())
   email     String   @unique
-  name      String?
+  name      String
+  password  String
+  role      String   @default("admin")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
-model Post {
+// ─── SITE SETTINGS (singleton) ───
+model SiteSetting {
+  id    String @id @default("main")
+  name        String   @default("Refúgio Mata Atlântica")
+  tagline     String   @default("Onde a natureza abraça o descanso")
+  description String   @default("")
+  phone       String   @default("")
+  whatsapp    String   @default("")
+  email       String   @default("")
+  address     String   @default("")
+  lat         Float    @default(-23.18)
+  lng         Float    @default(-44.92)
+  instagram   String   @default("")
+  facebook    String   @default("")
+  tripadvisor String   @default("")
+  logo        String   @default("/logo.svg")
+  ogImage     String   @default("/logo.svg")
+  metaTitle       String @default("")
+  metaDescription String @default("")
+  googleAnalyticsId String @default("")
+  googleMapsApiKey String @default("")
+  updatedAt DateTime @updatedAt
+}
+
+// ─── NAV LINKS ───
+model NavLink {
+  id       String @id @default(cuid())
+  label    String
+  href     String
+  sortOrder Int   @default(0)
+}
+
+// ─── ROOMS ───
+model Room {
+  id              String   @id @default(cuid())
+  name            String
+  slug            String   @unique
+  price           Float
+  capacity        Int
+  size            Int
+  bedType         String   @default("")
+  description     String   @default("")
+  descriptionLong String   @default("")
+  policy          String   @default("")
+  sortOrder       Int      @default(0)
+  published       Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  images    RoomImage[]
+  amenities RoomAmenity[]
+  reservations Reservation[]
+}
+
+model RoomImage {
+  id        String @id @default(cuid())
+  src       String
+  alt       String @default("")
+  sortOrder Int   @default(0)
+  roomId    String
+  room      Room   @relation(fields: [roomId], references: [id], onDelete: Cascade)
+}
+
+model RoomAmenity {
+  id        String @id @default(cuid())
+  name      String
+  icon      String @default("Sparkles")
+  sortOrder Int   @default(0)
+  roomId    String
+  room      Room   @relation(fields: [roomId], references: [id], onDelete: Cascade)
+}
+
+// ─── EXPERIENCES ───
+model Experience {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  image       String   @default("")
+  duration    String   @default("")
+  difficulty  String   @default("")
+  sortOrder   Int      @default(0)
+  published   Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ─── GALLERY ───
+model GalleryImage {
   id        String   @id @default(cuid())
-  title     String
-  content   String?
-  published Boolean  @default(false)
-  authorId  String
+  src       String
+  alt       String   @default("")
+  span      String   @default("col-span-1 row-span-1")
+  sortOrder Int      @default(0)
+  published Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// ─── TESTIMONIALS ───
+model Testimonial {
+  id        String   @id @default(cuid())
+  name      String
+  location  String   @default("")
+  avatar    String   @default("")
+  text      String
+  rating    Int      @default(5)
+  sortOrder Int      @default(0)
+  published Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ─── FAQ ───
+model Faq {
+  id        String   @id @default(cuid())
+  question  String
+  answer    String
+  sortOrder Int      @default(0)
+  published Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ─── ABOUT PAGE ───
+model AboutAmenity {
+  id        String @id @default(cuid())
+  icon      String
+  label     String
+  desc      String @default("")
+  sortOrder Int   @default(0)
+}
+
+model Distance {
+  id        String @id @default(cuid())
+  place     String
+  distance  String
+  time      String
+  sortOrder Int   @default(0)
+}
+
+model Direction {
+  id        String @id @default(cuid())
+  city      String
+  route     String
+  type      String @default("carro")
+  sortOrder Int   @default(0)
+}
+
+model SensoryConfig {
+  id        String   @id @default("main")
+  title     String @default("")
+  paragraphs String @default("[]")
+  updatedAt DateTime @updatedAt
+}
+
+model Stat {
+  id        String @id @default(cuid())
+  value     Int
+  suffix    String @default("")
+  label     String
+  sortOrder Int   @default(0)
+}
+
+// ─── FORM SUBMISSIONS ───
+model NewsletterSubscriber {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  consent   Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model ContactSubmission {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  phone     String   @default("")
+  message   String
+  consent   Boolean  @default(false)
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+// ─── RESERVATIONS ───
+model Reservation {
+  id                  String   @id @default(cuid())
+  guestName           String
+  guestEmail          String
+  guestPhone          String   @default("")
+  roomId              String
+  room                Room     @relation(fields: [roomId], references: [id])
+  checkIn             DateTime
+  checkOut            DateTime
+  guests              Int      @default(1)
+  totalPrice          Float
+  status              String   @default("pending")
+  mercadoPagoPaymentId String @default("")
+  mercadoPagoStatus   String @default("")
+  notes               String   @default("")
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 }

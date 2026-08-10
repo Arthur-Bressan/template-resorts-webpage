@@ -1,11 +1,16 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { navLinks, siteConfig } from "@/data/site";
 import { Menu, X, Leaf } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
+import type { SiteSettings, NavLink } from "@/lib/data";
 
-export function Header() {
+interface HeaderProps {
+  siteSettings: SiteSettings;
+  navLinks: NavLink[];
+}
+
+export function Header({ siteSettings, navLinks }: HeaderProps) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
@@ -51,7 +56,7 @@ export function Header() {
               <Leaf className="w-5 h-5 text-white" />
             </div>
             <span className={`font-serif text-lg font-medium tracking-tight transition-colors duration-300 ${showSolid ? "text-[var(--color-text)]" : "text-white"}`}>
-              {siteConfig.name}
+              {siteSettings.name}
             </span>
           </a>
 
@@ -75,15 +80,14 @@ export function Header() {
           </nav>
 
           <a
-            href={isHome ? "#booking" : "/#booking"}
-            onClick={(e) => { e.preventDefault(); handleNavClick("#booking"); }}
+            href="/reservas"
             className={`hidden lg:inline-flex items-center px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-300 ${
               showSolid
                 ? "bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-dark)]"
                 : "bg-white/20 backdrop-blur-sm text-white border border-white/30 hover:bg-white/30"
             }`}
           >
-            Reservar
+            Reservas
           </a>
 
           <button
@@ -116,12 +120,19 @@ export function Header() {
                 </button>
               ))}
             </nav>
-            <div className="mt-6 px-4">
-              <button
-                onClick={() => handleNavClick("#booking")}
+            <div className="mt-6 px-4 space-y-2">
+              <a
+                href="/reservas"
+                onClick={() => setMobileOpen(false)}
                 className="block w-full text-center py-3 rounded-full bg-[var(--color-primary)] text-white font-semibold hover:bg-[var(--color-primary-dark)] transition-colors"
               >
-                Reservar Agora
+                Reservar Online
+              </a>
+              <button
+                onClick={() => handleNavClick("#booking")}
+                className="block w-full text-center py-3 rounded-full border border-[var(--color-border)] text-[var(--color-text)] font-medium hover:bg-[var(--color-surface)] transition-colors"
+              >
+                Contato
               </button>
             </div>
           </div>

@@ -2,13 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { useReveal } from "@/hooks/useReveal";
-import { siteConfig } from "@/data/site";
-import {
-  amenities,
-  distances,
-  directions,
-  sensoryExperience,
-} from "@/data/sobre";
+import type { SiteSettings, AboutAmenity, Distance, Direction, SensoryConfig } from "@/lib/data";
 import {
   ChevronRight,
   Coffee,
@@ -105,7 +99,7 @@ function BreadcrumbHero() {
 }
 
 /* ─── Amenities ─── */
-function AmenitiesSection() {
+function AmenitiesSection({ amenities }: { amenities: AboutAmenity[] }) {
   const ref = useReveal();
 
   return (
@@ -155,7 +149,7 @@ function AmenitiesSection() {
 }
 
 /* ─── Location ─── */
-function LocationSection() {
+function LocationSection({ siteSettings, distances, directions }: { siteSettings: SiteSettings; distances: Distance[]; directions: Direction[] }) {
   const ref = useReveal();
 
   return (
@@ -183,7 +177,7 @@ function LocationSection() {
                 <ImageIcon className="w-16 h-16 opacity-20" />
                 <span className="text-sm opacity-40">Mapa do Google Maps aqui</span>
                 <a
-                  href={`https://www.google.com/maps/search/?api=1&query=${siteConfig.coordinates.lat},${siteConfig.coordinates.lng}`}
+                  href={`https://www.google.com/maps/search/?api=1&query=${siteSettings.lat},${siteSettings.lng}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="mt-2 px-5 py-2.5 rounded-full bg-[var(--color-primary)] text-white text-sm font-medium hover:bg-[var(--color-primary-dark)] transition-colors"
@@ -201,13 +195,13 @@ function LocationSection() {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-[var(--color-text)] mb-1">
-                    {siteConfig.name}
+                    {siteSettings.name}
                   </p>
                   <p className="text-sm text-[var(--color-text-muted)]">
-                    {siteConfig.address}
+                    {siteSettings.address}
                   </p>
                   <p className="text-sm text-[var(--color-text-muted)] mt-1">
-                    {siteConfig.coordinates.lat}°S, {siteConfig.coordinates.lng}°O
+                    {siteSettings.lat}°S, {siteSettings.lng}°O
                   </p>
                 </div>
               </div>
@@ -281,8 +275,9 @@ function LocationSection() {
 }
 
 /* ─── Sensory Experience ─── */
-function SensorySection() {
+function SensorySection({ sensory }: { sensory: SensoryConfig | null }) {
   const ref = useReveal();
+  const paragraphs: string[] = sensory?.paragraphs ? JSON.parse(sensory.paragraphs) : [];
 
   return (
     <section ref={ref} className="section-padding overflow-hidden">
@@ -307,11 +302,11 @@ function SensorySection() {
             </span>
 
             <h2 className="reveal font-serif text-[var(--color-text)] mb-8 text-3xl md:text-4xl leading-tight">
-              {sensoryExperience.title}
+              {sensory?.title || ""}
             </h2>
 
             <div className="space-y-5">
-              {sensoryExperience.paragraphs.map((p, i) => (
+              {paragraphs.map((p, i) => (
                 <p key={i} className="reveal text-base text-[var(--color-text-muted)] leading-relaxed font-sans">
                   {p}
                 </p>
@@ -349,7 +344,7 @@ function SensorySection() {
 }
 
 /* ─── CTA Final ─── */
-function FinalCTA() {
+function FinalCTA({ siteSettings }: { siteSettings: SiteSettings }) {
   return (
     <section id="booking" className="relative py-28 overflow-hidden">
       <div className="absolute inset-0 bg-[var(--color-primary-dark)]" />
@@ -388,14 +383,14 @@ function FinalCTA() {
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
           <a
-            href={`tel:${siteConfig.phone}`}
+            href={`tel:${siteSettings.phone}`}
             className="inline-flex items-center gap-2.5 px-8 py-4 rounded-full bg-[var(--color-accent)] text-[var(--color-primary-dark)] font-semibold text-base hover:bg-[var(--color-accent)]/90 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 min-w-[220px] justify-center"
           >
             <Phone className="w-4 h-4" />
             Reservar por Telefone
           </a>
           <a
-            href={`mailto:${siteConfig.email}?subject=Reserva%20-%20Sobre%20a%20Pousada`}
+            href={`mailto:${siteSettings.email}?subject=Reserva%20-%20Sobre%20a%20Pousada`}
             className="inline-flex items-center gap-2.5 px-8 py-4 rounded-full bg-white/15 backdrop-blur-sm text-white font-medium text-base border border-white/25 hover:bg-white/25 transition-all min-w-[220px] justify-center"
           >
             <Mail className="w-4 h-4" />
@@ -404,7 +399,7 @@ function FinalCTA() {
         </div>
 
         <p className="text-sm text-white/40 mt-6">
-          Ou fale pelo WhatsApp: {siteConfig.phone}
+          Ou fale pelo WhatsApp: {siteSettings.phone}
         </p>
       </div>
     </section>
@@ -412,15 +407,15 @@ function FinalCTA() {
 }
 
 /* ─── Schema.org (JSON-LD) ─── */
-function LodgingSchema() {
+function LodgingSchema({ siteSettings, amenities }: { siteSettings: SiteSettings; amenities: AboutAmenity[] }) {
   const schema = {
     "@context": "https://schema.org",
     "@type": "LodgingBusiness",
-    name: siteConfig.name,
-    description: siteConfig.description,
+    name: siteSettings.name,
+    description: siteSettings.description,
     url: "https://refugiomataatlantica.com.br",
-    telephone: siteConfig.phone,
-    email: siteConfig.email,
+    telephone: siteSettings.phone,
+    email: siteSettings.email,
     address: {
       "@type": "PostalAddress",
       streetAddress: "Estrada da Serra, Km 12",
@@ -431,8 +426,8 @@ function LodgingSchema() {
     },
     geo: {
       "@type": "GeoCoordinates",
-      latitude: siteConfig.coordinates.lat,
-      longitude: siteConfig.coordinates.lng,
+      latitude: siteSettings.lat,
+      longitude: siteSettings.lng,
     },
     amenityFeature: amenities.map((a) => ({
       "@type": "LocationFeatureSpecification",
@@ -458,16 +453,25 @@ function LodgingSchema() {
   );
 }
 
+/* ─── Props Interface ─── */
+interface SobrePageProps {
+  siteSettings: SiteSettings;
+  amenities: AboutAmenity[];
+  distances: Distance[];
+  directions: Direction[];
+  sensory: SensoryConfig | null;
+}
+
 /* ─── Page Component ─── */
-export default function SobrePage() {
+export default function SobrePage({ siteSettings, amenities, distances, directions, sensory }: SobrePageProps) {
   return (
     <>
-      <LodgingSchema />
+      <LodgingSchema siteSettings={siteSettings} amenities={amenities} />
       <BreadcrumbHero />
-      <AmenitiesSection />
-      <LocationSection />
-      <SensorySection />
-      <FinalCTA />
+      <AmenitiesSection amenities={amenities} />
+      <LocationSection siteSettings={siteSettings} distances={distances} directions={directions} />
+      <SensorySection sensory={sensory} />
+      <FinalCTA siteSettings={siteSettings} />
     </>
   );
 }

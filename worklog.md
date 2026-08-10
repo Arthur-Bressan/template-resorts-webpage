@@ -153,3 +153,124 @@ Stage Summary:
 - No console errors, clean lint
 - Visual check: leaves visible at varying sizes, rotations, opacity levels; blur+fade exit working
 - Page structure intact (header, main, footer all present)
+
+---
+Task ID: 2-a
+Agent: Database Foundation Agent
+Task: Prisma schema, seed script, db client, auth utils
+
+Work Log:
+- Designed 18 Prisma models covering all site content: Admin, SiteSetting, NavLink, Room, RoomImage, RoomAmenity, Experience, GalleryImage, Testimonial, Faq, AboutAmenity, Distance, Direction, SensoryConfig, Stat, NewsletterSubscriber, ContactSubmission, Reservation
+- Created prisma schema with SQLite provider
+- Created seed script with ~105 records from existing data files
+- Created db singleton client at src/lib/db.ts
+- Created auth utilities at src/lib/auth.ts (bcryptjs + HMAC-JWT)
+- Downgraded from Prisma 7 to Prisma 6 (v7 required driver adapters that caused compatibility issues)
+- Fixed Faq model naming (FAQ → Faq to avoid Prisma camelCase issue)
+
+Stage Summary:
+- Database: 18 tables, ~105 seed records
+- Auth: bcryptjs password hashing, HMAC-SHA256 token signing
+- Admin credentials: admin@refugio.com / admin123
+
+---
+Task ID: 2-b
+Agent: Quick UI Wins Agent
+Task: WhatsApp floating button, 404 page, Google Maps embed, loading skeleton
+
+Work Log:
+- Created WhatsAppFloat component with pulse animation, opens wa.me link
+- Created custom 404 page with gradient-masked number
+- Updated Location section with Google Maps iframe embed
+- Created loading.tsx skeleton page
+
+Stage Summary:
+- WhatsApp button: fixed bottom-right, green #25D366, pulse glow
+- 404 page: gradient 404 number, back to home + contact buttons
+- Location: real Google Maps iframe replacing placeholder
+- Loading: skeleton matching homepage structure
+
+---
+Task ID: 4
+Agent: API Routes Agent
+Task: All admin API routes (41 handlers)
+
+Work Log:
+- Created admin-auth middleware helper (getAdminSession, requireAdmin)
+- Created 18 API route files under src/app/api/admin/
+- Auth: POST login, GET session, DELETE logout
+- CRUD: settings, nav-links, rooms, experiences, gallery, testimonials, faq, about, newsletter, contacts, reservations
+- Upload: POST image upload to /public/uploads/
+
+Stage Summary:
+- 41 API route handlers across 18 files
+- Token-based auth with 7-day expiry
+- Image upload: 5MB max, jpeg/png/webp/gif
+
+---
+Task ID: 5
+Agent: Admin CMS Panel Agent
+Task: Complete CMS admin panel
+
+Work Log:
+- Created admin-client.ts with typed API helper
+- Created admin layout with dark sidebar + header
+- Created login page with email/password
+- Created dashboard with stats cards
+- Created 14 management pages: rooms (list/new/edit), experiences, gallery, testimonials, faq, about (5 tabs), settings (5 tabs), newsletter, contacts, reservations, nav-links
+- Created ImageUpload component for admin
+
+Stage Summary:
+- 17 admin pages + 1 layout + 1 reusable component
+- Dark sidebar navigation with Lucide icons
+- All CRUD operations with confirmation dialogs
+
+---
+Task ID: 7
+Agent: Frontend Migration Agent
+Task: Migrate frontend from hardcoded data to database
+
+Work Log:
+- Created src/lib/data.ts with 8 async fetching functions + 14 TypeScript interfaces
+- Converted page.tsx, sobre/page.tsx, quartos/[slug]/page.tsx to async server components
+- Updated 13 section components to accept data via props instead of importing from data files
+- Updated layout.tsx with generateMetadata from DB
+
+Stage Summary:
+- 1 file created (data.ts), 18 files modified
+- All sections now receive data from database via server component props
+- data/site.ts and data/sobre.ts preserved as reference/fallback
+
+---
+Task ID: 8
+Agent: Mercado Pago Reservation Agent
+Task: Reservation system with Mercado Pago integration
+
+Work Log:
+- Created public reservation form at /reservas (room selection, dates, price calc, LGPD consent)
+- Created API: create-preference (validates, creates DB record, creates MP preference)
+- Created API: webhook (receives MP payment events, updates reservation status)
+- Created result pages: sucesso, falha, pendente
+- Added "Reservas" nav link in Header + "Reservar Online" button in BookingCTA
+- Mock mode when MERCADO_PAGO_ACCESS_TOKEN not set
+
+Stage Summary:
+- 10 new files: reservation page, 3 result pages, 2 API routes
+- Payment flow: form → MP checkout → webhook → status update
+- Dev mode: redirects to /reservas/pendente without real payment
+
+---
+Task ID: fix-legal + fix-cookie
+Agent: Recovery Agent
+Task: Recreate accidentally deleted legal pages and CookieConsent
+
+Work Log:
+- Recreated /politica-de-privacidade (10-section LGPD policy)
+- Recreated /termos-de-uso (8-section terms)
+- Recreated sitemap.ts
+- Recreated CookieConsent component with glassmorphism banner
+- Installed missing @radix-ui/react-checkbox, @radix-ui/react-select, @radix-ui/react-label
+
+Stage Summary:
+- All 11 public routes returning 200
+- LGPD compliance restored (CookieConsent + legal pages)

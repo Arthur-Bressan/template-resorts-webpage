@@ -1,5 +1,3 @@
-"use client";
-
 import { SmoothScrollProvider } from "@/components/layout/SmoothScrollProvider";
 import { FallingLeaves } from "@/components/layout/FallingLeaves";
 import { Header } from "@/components/layout/Header";
@@ -14,28 +12,41 @@ import { Location } from "@/components/sections/Location";
 import { Testimonials } from "@/components/sections/Testimonials";
 import { FAQ } from "@/components/sections/FAQ";
 import { BookingCTA } from "@/components/sections/BookingCTA";
+import { getSiteConfig, getRooms, getExperiences, getGalleryImages, getTestimonials, getFAQs } from "@/lib/data";
+import { notFound } from "next/navigation";
 
-export default function Home() {
+export default async function Home() {
+  const { settings, links, stats } = await getSiteConfig();
+  if (!settings) return notFound();
+
+  const [rooms, experiences, galleryImages, testimonials, faqItems] = await Promise.all([
+    getRooms(),
+    getExperiences(),
+    getGalleryImages(),
+    getTestimonials(),
+    getFAQs(),
+  ]);
+
   return (
     <SmoothScrollProvider>
       <FallingLeaves />
       <div className="min-h-screen flex flex-col">
-        <Header />
+        <Header siteSettings={settings} navLinks={links} />
 
         <main className="flex-1">
-          <Hero />
+          <Hero siteSettings={settings} />
           <SocialProof />
           <About />
-          <Rooms />
-          <Experiences />
-          <Gallery />
-          <Location />
-          <Testimonials />
-          <FAQ />
-          <BookingCTA />
+          <Rooms rooms={rooms} />
+          <Experiences experiences={experiences} />
+          <Gallery galleryImages={galleryImages} />
+          <Location siteSettings={settings} />
+          <Testimonials testimonials={testimonials} />
+          <FAQ faqItems={faqItems} />
+          <BookingCTA siteSettings={settings} />
         </main>
 
-        <Footer />
+        <Footer siteSettings={settings} stats={stats} />
       </div>
     </SmoothScrollProvider>
   );

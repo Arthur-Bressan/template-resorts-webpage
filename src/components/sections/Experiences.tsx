@@ -2,10 +2,10 @@
 
 import { useReveal } from "@/hooks/useReveal";
 import { useCardTilt } from "@/hooks/useCardTilt";
-import { experiences } from "@/data/site";
 import { Clock, Mountain, ImageIcon } from "lucide-react";
+import type { Experience } from "@/lib/data";
 
-function ExperienceCard({ exp, idx }: { exp: (typeof experiences)[0]; idx: number }) {
+function ExperienceCard({ exp, idx }: { exp: Experience; idx: number }) {
   const tiltRef = useCardTilt<HTMLElement>();
 
   return (
@@ -56,7 +56,11 @@ function ExperienceCard({ exp, idx }: { exp: (typeof experiences)[0]; idx: numbe
   );
 }
 
-export function Experiences() {
+interface ExperiencesProps {
+  experiences: Experience[];
+}
+
+export function Experiences({ experiences }: ExperiencesProps) {
   const ref = useReveal();
 
   return (

@@ -2,11 +2,11 @@
 
 import { useReveal } from "@/hooks/useReveal";
 import { useCardTilt } from "@/hooks/useCardTilt";
-import { rooms } from "@/data/site";
 import { Users, Maximize2, CheckCircle2, ImageIcon, ArrowRight } from "lucide-react";
 import Link from "next/link";
+import type { Room } from "@/lib/data";
 
-function RoomCard({ room }: { room: (typeof rooms)[0] }) {
+function RoomCard({ room }: { room: Room }) {
   const tiltRef = useCardTilt<HTMLElement>();
 
   return (
@@ -93,7 +93,11 @@ function RoomCard({ room }: { room: (typeof rooms)[0] }) {
   );
 }
 
-export function Rooms() {
+interface RoomsProps {
+  rooms: Room[];
+}
+
+export function Rooms({ rooms }: RoomsProps) {
   const ref = useReveal();
 
   return (

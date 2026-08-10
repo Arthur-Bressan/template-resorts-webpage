@@ -1,7 +1,7 @@
 "use client";
 
 import { useReveal } from "@/hooks/useReveal";
-import { siteConfig } from "@/data/site";
+import type { SiteSettings } from "@/lib/data";
 import { MapPin, Compass, Car, Clock, TreePine, Waves } from "lucide-react";
 
 const nearby = [
@@ -17,7 +17,11 @@ const directions = [
   { label: "Campinas", time: "2.5 horas", route: "Rod. Dom Pedro I → Taubaté → Cunha" },
 ];
 
-export function Location() {
+interface LocationProps {
+  siteSettings: SiteSettings;
+}
+
+export function Location({ siteSettings }: LocationProps) {
   const ref = useReveal();
 
   return (
@@ -45,28 +49,28 @@ export function Location() {
         </div>
 
         <div className="grid lg:grid-cols-2 gap-10">
-          {/* Map placeholder */}
-          <div className="reveal-left relative rounded-2xl overflow-hidden shadow-lg bg-[var(--color-surface)] h-[400px] md:h-[480px] flex items-center justify-center">
-            <div className="text-center">
-              <div className="w-20 h-20 rounded-full bg-[var(--color-primary)]/10 flex items-center justify-center mx-auto mb-4">
-                <MapPin className="w-10 h-10 text-[var(--color-primary)]" />
-              </div>
-              <p className="font-serif text-xl text-[var(--color-text)] mb-2">
-                {siteConfig.name}
-              </p>
-              <p className="text-sm text-[var(--color-text-muted)]">
-                {siteConfig.address}
-              </p>
-              <a
-                href={`https://www.google.com/maps/search/?api=1&query=${siteConfig.coordinates.lat},${siteConfig.coordinates.lng}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 mt-4 px-5 py-2.5 rounded-full bg-[var(--color-primary)] text-white text-sm font-medium hover:bg-[var(--color-primary-dark)] transition-colors"
-              >
-                <MapPin className="w-4 h-4" />
-                Abrir no Google Maps
-              </a>
-            </div>
+          {/* Google Maps Embed */}
+          <div className="reveal-left relative rounded-2xl overflow-hidden shadow-lg h-[400px] md:h-[480px]">
+            <iframe
+              src={`https://maps.google.com/maps?q=${siteSettings.lat},${siteSettings.lng}&z=14&output=embed`}
+              className="absolute inset-0 h-full w-full border-0"
+              allowFullScreen
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+              title="Localização da pousada no Google Maps"
+            />
+          </div>
+          {/* Google Maps Link Button */}
+          <div className="reveal mt-4">
+            <a
+              href={`https://www.google.com/maps/search/?api=1&query=${siteSettings.lat},${siteSettings.lng}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[var(--color-primary)] text-white text-sm font-medium hover:bg-[var(--color-primary-dark)] transition-colors"
+            >
+              <MapPin className="w-4 h-4" />
+              Abrir no Google Maps
+            </a>
           </div>
 
           {/* Info */}

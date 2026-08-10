@@ -1,6 +1,6 @@
 "use client";
 
-import { siteConfig, stats } from "@/data/site";
+import type { SiteSettings, Stat } from "@/lib/data";
 import { Leaf, Mail, Phone, MapPin } from "lucide-react";
 import { gsap, ScrollTrigger } from "@/components/layout/SmoothScrollProvider";
 import { useEffect } from "react";
@@ -37,7 +37,12 @@ function CountUpNumber({ target, suffix }: { target: number; suffix: string }) {
   );
 }
 
-export function Footer() {
+interface FooterProps {
+  siteSettings: SiteSettings;
+  stats: Stat[];
+}
+
+export function Footer({ siteSettings, stats }: FooterProps) {
   return (
     <footer className="bg-[var(--color-primary-dark)] text-[var(--color-background)]">
       {/* Stats Bar */}
@@ -66,11 +71,11 @@ export function Footer() {
                 <Leaf className="w-5 h-5 text-[var(--color-accent)]" />
               </div>
               <span className="font-serif text-lg font-medium text-white">
-                {siteConfig.name}
+                {siteSettings.name}
               </span>
             </a>
             <p className="text-sm text-white/60 leading-relaxed">
-              {siteConfig.description.substring(0, 120)}...
+              {siteSettings.description.substring(0, 120)}...
             </p>
           </div>
 
@@ -107,26 +112,26 @@ export function Footer() {
             <ul className="space-y-3">
               <li>
                 <a
-                  href={`tel:${siteConfig.phone}`}
+                  href={`tel:${siteSettings.phone}`}
                   className="flex items-center gap-2.5 text-sm text-white/50 hover:text-white transition-colors"
                 >
                   <Phone className="w-4 h-4 shrink-0" />
-                  {siteConfig.phone}
+                  {siteSettings.phone}
                 </a>
               </li>
               <li>
                 <a
-                  href={`mailto:${siteConfig.email}`}
+                  href={`mailto:${siteSettings.email}`}
                   className="flex items-center gap-2.5 text-sm text-white/50 hover:text-white transition-colors"
                 >
                   <Mail className="w-4 h-4 shrink-0" />
-                  {siteConfig.email}
+                  {siteSettings.email}
                 </a>
               </li>
               <li>
                 <span className="flex items-start gap-2.5 text-sm text-white/50">
                   <MapPin className="w-4 h-4 shrink-0 mt-0.5" />
-                  {siteConfig.address}
+                  {siteSettings.address}
                 </span>
               </li>
             </ul>
@@ -162,16 +167,16 @@ export function Footer() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-xs text-white/40">
-              © {new Date().getFullYear()} {siteConfig.name}. Todos os direitos reservados.
+              © {new Date().getFullYear()} {siteSettings.name}. Todos os direitos reservados.
             </p>
             <div className="flex items-center gap-6">
-              <a href={siteConfig.socials.instagram} className="text-xs text-white/40 hover:text-white transition-colors">
+              <a href={siteSettings.instagram} className="text-xs text-white/40 hover:text-white transition-colors">
                 Instagram
               </a>
-              <a href={siteConfig.socials.facebook} className="text-xs text-white/40 hover:text-white transition-colors">
+              <a href={siteSettings.facebook} className="text-xs text-white/40 hover:text-white transition-colors">
                 Facebook
               </a>
-              <a href={siteConfig.socials.tripadvisor} className="text-xs text-white/40 hover:text-white transition-colors">
+              <a href={siteSettings.tripadvisor} className="text-xs text-white/40 hover:text-white transition-colors">
                 TripAdvisor
               </a>
             </div>

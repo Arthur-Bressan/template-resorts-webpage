@@ -1,26 +1,32 @@
-"use client";
-
-import { use } from "react";
 import { SmoothScrollProvider } from "@/components/layout/SmoothScrollProvider";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import RoomDetailPage from "@/components/sections/RoomDetailPage";
+import { getSiteConfig, getRoomBySlug, getRooms } from "@/lib/data";
+import { notFound } from "next/navigation";
 
-export default function QuartoPage({
-  params,
-}: {
+type Props = {
   params: Promise<{ slug: string }>;
-}) {
-  const { slug } = use(params);
+};
+
+export default async function QuartoPage({ params }: Props) {
+  const { slug } = await params;
+  const { settings, links, stats } = await getSiteConfig();
+  if (!settings) return notFound();
+
+  const [room, allRooms] = await Promise.all([
+    getRoomBySlug(slug),
+    getRooms(),
+  ]);
 
   return (
     <SmoothScrollProvider>
       <div className="min-h-screen flex flex-col">
-        <Header />
+        <Header siteSettings={settings} navLinks={links} />
         <main className="flex-1">
-          <RoomDetailPage slug={slug} />
+          <RoomDetailPage room={room} allRooms={allRooms} siteSettings={settings} />
         </main>
-        <Footer />
+        <Footer siteSettings={settings} stats={stats} />
       </div>
     </SmoothScrollProvider>
   );

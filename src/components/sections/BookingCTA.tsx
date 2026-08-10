@@ -1,9 +1,14 @@
 "use client";
 
-import { siteConfig } from "@/data/site";
-import { Phone, Mail, Calendar } from "lucide-react";
+import type { SiteSettings } from "@/lib/data";
+import { Phone, Mail, Calendar, CreditCard } from "lucide-react";
+import Link from "next/link";
 
-export function BookingCTA() {
+interface BookingCTAProps {
+  siteSettings: SiteSettings;
+}
+
+export function BookingCTA({ siteSettings }: BookingCTAProps) {
   return (
     <section
       id="booking"
@@ -40,16 +45,23 @@ export function BookingCTA() {
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
+          <Link
+            href="/reservas"
+            className="inline-flex items-center gap-2.5 px-6 py-3.5 rounded-full bg-[var(--color-accent)] text-[var(--color-primary-dark)] font-semibold hover:bg-[var(--color-accent)]/90 transition-colors shadow-lg min-w-[200px] justify-center"
+          >
+            <CreditCard className="w-4 h-4" />
+            Reservar Online
+          </Link>
           <a
-            href={`tel:${siteConfig.phone}`}
+            href={`tel:${siteSettings.phone}`}
             className="inline-flex items-center gap-2.5 px-6 py-3.5 rounded-full bg-white text-[var(--color-text)] font-semibold hover:bg-white/90 transition-colors shadow-lg min-w-[200px] justify-center"
           >
             <Phone className="w-4 h-4" />
             Ligar Agora
           </a>
           <a
-            href={`mailto:${siteConfig.email}?subject=Reserva`}
-            className="inline-flex items-center gap-2.5 px-6 py-3.5 rounded-full bg-[var(--color-accent)] text-[var(--color-primary-dark)] font-semibold hover:bg-[var(--color-accent)]/90 transition-colors min-w-[200px] justify-center"
+            href={`mailto:${siteSettings.email}?subject=Reserva`}
+            className="inline-flex items-center gap-2.5 px-6 py-3.5 rounded-full bg-white/15 text-white font-semibold hover:bg-white/25 transition-colors border border-white/20 min-w-[200px] justify-center"
           >
             <Mail className="w-4 h-4" />
             Enviar E-mail
@@ -57,7 +69,7 @@ export function BookingCTA() {
         </div>
 
         <p className="text-sm text-white/50">
-          Ou fale pelo WhatsApp: {siteConfig.phone}
+          Ou fale pelo WhatsApp: {siteSettings.phone}
         </p>
       </div>
     </section>

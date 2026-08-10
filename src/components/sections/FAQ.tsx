@@ -1,11 +1,15 @@
 "use client";
 
 import { useReveal } from "@/hooks/useReveal";
-import { faqItems } from "@/data/site";
+import type { FAQ as FAQType } from "@/lib/data";
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 
-export function FAQ() {
+interface FAQProps {
+  faqItems: FAQType[];
+}
+
+export function FAQ({ faqItems }: FAQProps) {
   const ref = useReveal();
   const [openIdx, setOpenIdx] = useState<number | null>(null);
 
@@ -34,7 +38,7 @@ export function FAQ() {
         <div className="space-y-3" data-stagger>
           {faqItems.map((item, idx) => (
             <div
-              key={idx}
+              key={item.id}
               data-stagger-child
               className="rounded-xl bg-[var(--color-surface)] overflow-hidden transition-shadow hover:shadow-md"
             >

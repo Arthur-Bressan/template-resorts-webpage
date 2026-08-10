@@ -2,9 +2,13 @@
 
 import { useEffect, useRef } from "react";
 import { gsap, ScrollTrigger } from "@/components/layout/SmoothScrollProvider";
-import { siteConfig } from "@/data/site";
+import type { SiteSettings } from "@/lib/data";
 
-export function Hero() {
+interface HeroProps {
+  siteSettings: SiteSettings;
+}
+
+export function Hero({ siteSettings }: HeroProps) {
   const sectionRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -104,7 +108,7 @@ export function Hero() {
 
         {/* Subtitle */}
         <p className="hero-fade text-lg md:text-xl text-white/80 max-w-2xl mx-auto mb-10 font-sans">
-          {siteConfig.tagline} — suítes com vista para a floresta, spa natural,
+          {siteSettings.tagline} — suítes com vista para a floresta, spa natural,
           trilhas pela Mata Atlântica e gastronomia que celebra o terroir.
         </p>
 
