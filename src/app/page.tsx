@@ -13,11 +13,12 @@ import { Testimonials } from "@/components/sections/Testimonials";
 import { FAQ } from "@/components/sections/FAQ";
 import { BookingCTA } from "@/components/sections/BookingCTA";
 import { getSiteConfig, getRooms, getExperiences, getGalleryImages, getTestimonials, getFAQs } from "@/lib/data";
-import { notFound } from "next/navigation";
+
+// Dynamic rendering — pages are server-rendered on each request (external DB)
+export const dynamic = 'force-dynamic';
 
 export default async function Home() {
   const { settings, links, stats } = await getSiteConfig();
-  if (!settings) return notFound();
 
   const [rooms, experiences, galleryImages, testimonials, faqItems] = await Promise.all([
     getRooms(),

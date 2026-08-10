@@ -3,11 +3,12 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import SobrePage from "@/components/sections/SobrePage";
 import { getSiteConfig, getAboutData } from "@/lib/data";
-import { notFound } from "next/navigation";
+
+// Dynamic rendering — pages are server-rendered on each request (external DB)
+export const dynamic = 'force-dynamic';
 
 export default async function Sobre() {
   const { settings, links, stats } = await getSiteConfig();
-  if (!settings) return notFound();
 
   const { amenities, distances, directions, sensory } = await getAboutData();
 

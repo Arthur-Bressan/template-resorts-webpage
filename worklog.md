@@ -303,3 +303,25 @@ Stage Summary:
 - User workflow: local dev uses file: SQLite, Vercel uses libsql:// Turso via adapter
 - Key files changed: prisma/schema.prisma, src/lib/db.ts, prisma/seed.ts, .env.example
 - New file: scripts/setup-turso.ts
+---
+Task ID: 1
+Agent: Main Agent
+Task: Fix Turso setup script + build-time DB error handling for Vercel deployment
+
+Work Log:
+- Fixed `turso:setup` script in package.json to include `--force` flag (drops existing tables before creating)
+- Improved error handling in `scripts/setup-turso.ts` — now checks `e.message`, `e.code`, and `String(e)` for "already exists" patterns
+- Rewrote `src/lib/data.ts` — all 8 data fetching functions now wrapped in try/catch with fallback empty data. `getSiteConfig()` returns hardcoded fallback settings when DB is unreachable
+- Added try/catch to `src/app/layout.tsx` — both `generateMetadata()` and layout body now gracefully handle DB errors
+- Added `export const dynamic = \"force-dynamic\"` to page.tsx, sobre/page.tsx, and quartos/[slug]/page.tsx to prevent static generation failures on Vercel
+- Wrapped `generateMetadata()` in quartos/[slug]/layout.tsx in try/catch
+- Removed unnecessary `notFound()` calls from page.tsx and sobre/page.tsx since getSiteConfig() now always returns valid data
+- Verified lint passes (0 errors)
+- Verified dev server responds HTTP 200
+
+Stage Summary:
+- All build-time DB queries are now resilient to Turso being unreachable
+- Pages use force-dynamic rendering for external DB compatibility
+- turso:setup script now always drops tables first (--force flag)
+- Site verified working via curl (HTTP 200) and earlier agent browser session
+

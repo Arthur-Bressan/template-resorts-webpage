@@ -12,7 +12,7 @@
     "db:push": "npx prisma db push",
     "db:seed": "npx tsx prisma/seed.ts",
     "db:setup": "npx prisma generate && npx prisma db push && npx tsx prisma/seed.ts",
-    "turso:setup": "npx tsx scripts/setup-turso.ts --seed"
+    "turso:setup": "npx tsx scripts/setup-turso.ts --force --seed"
   },
   "dependencies": {
     "@libsql/client": "^0.17.4",

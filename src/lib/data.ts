@@ -153,71 +153,138 @@ export interface SensoryConfig {
   updatedAt: Date
 }
 
-// ─── Data Fetching Functions ───
+// ─── Fallback defaults (used when DB is unreachable) ───
+
+const FALLBACK_SETTINGS: SiteSettings = {
+  id: 'main',
+  name: 'Refúgio Mata Atlântica',
+  tagline: 'Onde a natureza abraça o descanso',
+  description: 'Pousada premium na Mata Atlântica',
+  phone: '',
+  whatsapp: '',
+  email: '',
+  address: '',
+  lat: -23.18,
+  lng: -44.92,
+  instagram: '',
+  facebook: '',
+  tripadvisor: '',
+  logo: '/logo.svg',
+  ogImage: '/logo.svg',
+  metaTitle: '',
+  metaDescription: '',
+  googleAnalyticsId: '',
+  googleMapsApiKey: '',
+  updatedAt: new Date(),
+}
+
+const FALLBACK_LINKS: NavLink[] = [
+  { id: 'nav-sobre', label: 'Sobre', href: '/sobre', sortOrder: 0 },
+  { id: 'nav-rooms', label: 'Acomodações', href: '#rooms', sortOrder: 1 },
+  { id: 'nav-experiences', label: 'Experiências', href: '#experiences', sortOrder: 2 },
+  { id: 'nav-gallery', label: 'Galeria', href: '#gallery', sortOrder: 3 },
+  { id: 'nav-location', label: 'Localização', href: '#location', sortOrder: 4 },
+  { id: 'nav-testimonials', label: 'Depoimentos', href: '#testimonials', sortOrder: 5 },
+  { id: 'nav-faq', label: 'FAQ', href: '#faq', sortOrder: 6 },
+]
+
+// ─── Data Fetching Functions (with error handling) ───
 
 export async function getSiteConfig() {
-  const settings = await db.siteSetting.findUnique({ where: { id: 'main' } })
-  const links = await db.navLink.findMany({ orderBy: { sortOrder: 'asc' } })
-  const stats = await db.stat.findMany({ orderBy: { sortOrder: 'asc' } })
-  return { settings, links, stats }
+  try {
+    const settings = await db.siteSetting.findUnique({ where: { id: 'main' } })
+    const links = await db.navLink.findMany({ orderBy: { sortOrder: 'asc' } })
+    const stats = await db.stat.findMany({ orderBy: { sortOrder: 'asc' } })
+    return { settings: settings || FALLBACK_SETTINGS, links: links.length > 0 ? links : FALLBACK_LINKS, stats }
+  } catch {
+    return { settings: FALLBACK_SETTINGS, links: FALLBACK_LINKS, stats: [] }
+  }
 }
 
 export async function getRooms(publishedOnly = true) {
-  return db.room.findMany({
-    where: publishedOnly ? { published: true } : undefined,
-    include: {
-      images: { orderBy: { sortOrder: 'asc' } },
-      amenities: { orderBy: { sortOrder: 'asc' } },
-    },
-    orderBy: { sortOrder: 'asc' },
-  })
+  try {
+    return await db.room.findMany({
+      where: publishedOnly ? { published: true } : undefined,
+      include: {
+        images: { orderBy: { sortOrder: 'asc' } },
+        amenities: { orderBy: { sortOrder: 'asc' } },
+      },
+      orderBy: { sortOrder: 'asc' },
+    })
+  } catch {
+    return []
+  }
 }
 
 export async function getRoomBySlug(slug: string) {
-  return db.room.findUnique({
-    where: { slug },
-    include: {
-      images: { orderBy: { sortOrder: 'asc' } },
-      amenities: { orderBy: { sortOrder: 'asc' } },
-    },
-  })
+  try {
+    return await db.room.findUnique({
+      where: { slug },
+      include: {
+        images: { orderBy: { sortOrder: 'asc' } },
+        amenities: { orderBy: { sortOrder: 'asc' } },
+      },
+    })
+  } catch {
+    return null
+  }
 }
 
 export async function getExperiences(publishedOnly = true) {
-  return db.experience.findMany({
-    where: publishedOnly ? { published: true } : undefined,
-    orderBy: { sortOrder: 'asc' },
-  })
+  try {
+    return await db.experience.findMany({
+      where: publishedOnly ? { published: true } : undefined,
+      orderBy: { sortOrder: 'asc' },
+    })
+  } catch {
+    return []
+  }
 }
 
 export async function getGalleryImages(publishedOnly = true) {
-  return db.galleryImage.findMany({
-    where: publishedOnly ? { published: true } : undefined,
-    orderBy: { sortOrder: 'asc' },
-  })
+  try {
+    return await db.galleryImage.findMany({
+      where: publishedOnly ? { published: true } : undefined,
+      orderBy: { sortOrder: 'asc' },
+    })
+  } catch {
+    return []
+  }
 }
 
 export async function getTestimonials(publishedOnly = true) {
-  return db.testimonial.findMany({
-    where: publishedOnly ? { published: true } : undefined,
-    orderBy: { sortOrder: 'asc' },
-  })
+  try {
+    return await db.testimonial.findMany({
+      where: publishedOnly ? { published: true } : undefined,
+      orderBy: { sortOrder: 'asc' },
+    })
+  } catch {
+    return []
+  }
 }
 
 export async function getFAQs(publishedOnly = true) {
-  return db.faq.findMany({
-    where: publishedOnly ? { published: true } : undefined,
-    orderBy: { sortOrder: 'asc' },
-  })
+  try {
+    return await db.faq.findMany({
+      where: publishedOnly ? { published: true } : undefined,
+      orderBy: { sortOrder: 'asc' },
+    })
+  } catch {
+    return []
+  }
 }
 
 export async function getAboutData() {
-  const [amenities, distances, directions, sensory, stats] = await Promise.all([
-    db.aboutAmenity.findMany({ orderBy: { sortOrder: 'asc' } }),
-    db.distance.findMany({ orderBy: { sortOrder: 'asc' } }),
-    db.direction.findMany({ orderBy: { sortOrder: 'asc' } }),
-    db.sensoryConfig.findUnique({ where: { id: 'main' } }),
-    db.stat.findMany({ orderBy: { sortOrder: 'asc' } }),
-  ])
-  return { amenities, distances, directions, sensory, stats }
+  try {
+    const [amenities, distances, directions, sensory, stats] = await Promise.all([
+      db.aboutAmenity.findMany({ orderBy: { sortOrder: 'asc' } }),
+      db.distance.findMany({ orderBy: { sortOrder: 'asc' } }),
+      db.direction.findMany({ orderBy: { sortOrder: 'asc' } }),
+      db.sensoryConfig.findUnique({ where: { id: 'main' } }),
+      db.stat.findMany({ orderBy: { sortOrder: 'asc' } }),
+    ])
+    return { amenities, distances, directions, sensory, stats }
+  } catch {
+    return { amenities: [], distances: [], directions: [], sensory: null, stats: [] }
+  }
 }

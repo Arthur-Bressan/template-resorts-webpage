@@ -102,9 +102,14 @@ async function main() {
       await client.execute(stmt)
       executed++
     } catch (e: any) {
-      const msg = String(e.message || '')
-      if (msg.includes('already exists')) {
+      const msg = String(e.message || e.code || e)
+      if (
+        msg.includes('already exists') ||
+        msg.includes('duplicate') ||
+        msg.includes('SQL_INPUT_ERROR') && msg.includes('already exists')
+      ) {
         skipped++
+        console.log(`   ⏭️  Skipped (already exists): ${stmt.substring(0, 60).replace(/\n/g, ' ')}...`)
       } else {
         console.error(`   ❌ Error executing: ${stmt.substring(0, 80)}...`)
         console.error(`   ${msg}`)

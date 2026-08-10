@@ -7,19 +7,23 @@ type Props = {
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { slug } = await params;
-  const room = await getRoomBySlug(slug);
-  if (!room) return { title: "Acomodação não encontrada" };
+  try {
+    const { slug } = await params;
+    const room = await getRoomBySlug(slug);
+    if (!room) return { title: "Acomodação não encontrada" };
 
-  return {
-    title: `${room.name} — ${room.bedType} | ${room.size}m²`,
-    description: room.description,
-    openGraph: {
-      title: `${room.name} — Refúgio Mata Atlântica`,
+    return {
+      title: `${room.name} — ${room.bedType} | ${room.size}m²`,
       description: room.description,
-      type: "website",
-    },
-  };
+      openGraph: {
+        title: `${room.name} — Refúgio Mata Atlântica`,
+        description: room.description,
+        type: "website",
+      },
+    };
+  } catch {
+    return { title: "Acomodação — Refúgio Mata Atlântica" };
+  }
 }
 
 export async function generateStaticParams() {
