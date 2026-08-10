@@ -16,7 +16,7 @@ export async function GET() {
       amenities,
       distances,
       directions,
-      sensory: sensory || { id: 'main', title: '', paragraphs: '[]' },
+      sensory: sensory ? { ...sensory, paragraphs: JSON.parse(sensory.paragraphs || '[]') } : { id: 'main', title: '', paragraphs: [] },
       stats,
     })
   } catch (error) {
@@ -56,8 +56,8 @@ export async function PUT(request: NextRequest) {
       if (sensory) {
         await tx.sensoryConfig.upsert({
           where: { id: 'main' },
-          update: { title: sensory.title, paragraphs: sensory.paragraphs },
-          create: { id: 'main', title: sensory.title, paragraphs: sensory.paragraphs },
+          update: { title: sensory.title, paragraphs: JSON.stringify(sensory.paragraphs || []) },
+          create: { id: 'main', title: sensory.title, paragraphs: JSON.stringify(sensory.paragraphs || []) },
         })
       }
 
@@ -80,7 +80,7 @@ export async function PUT(request: NextRequest) {
       amenities: result[0],
       distances: result[1],
       directions: result[2],
-      sensory: result[3] || { id: 'main', title: '', paragraphs: '[]' },
+      sensory: result[3] ? { ...result[3], paragraphs: JSON.parse(result[3].paragraphs || '[]') } : { id: 'main', title: '', paragraphs: [] },
       stats: result[4],
     })
   } catch (error) {

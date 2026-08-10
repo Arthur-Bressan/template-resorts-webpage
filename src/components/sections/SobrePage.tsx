@@ -277,7 +277,16 @@ function LocationSection({ siteSettings, distances, directions }: { siteSettings
 /* ─── Sensory Experience ─── */
 function SensorySection({ sensory }: { sensory: SensoryConfig | null }) {
   const ref = useReveal();
-  const paragraphs: string[] = sensory?.paragraphs ? JSON.parse(sensory.paragraphs) : [];
+  let paragraphs: string[] = [];
+  try {
+    const raw = sensory?.paragraphs;
+    if (raw) {
+      const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+      if (Array.isArray(parsed)) paragraphs = parsed;
+    }
+  } catch {
+    paragraphs = [];
+  }
 
   return (
     <section ref={ref} className="section-padding overflow-hidden">
