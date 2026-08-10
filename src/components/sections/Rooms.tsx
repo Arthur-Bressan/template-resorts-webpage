@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useReveal } from "@/hooks/useReveal";
 import { useCardTilt } from "@/hooks/useCardTilt";
 import { Users, Maximize2, CheckCircle2, ImageIcon, ArrowRight, CalendarCheck } from "lucide-react";
@@ -24,10 +25,12 @@ function RoomCard({ room }: { room: Room }) {
         >
           {/* Room image */}
           {room.images[0]?.src ? (
-            <img
+            <Image
               src={room.images[0].src}
               alt={room.images[0].alt || room.name}
-              className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110 group-hover:-translate-y-3"
+              fill
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+              className="object-cover transition-transform duration-700 ease-out group-hover:scale-110 group-hover:-translate-y-3"
               loading="lazy"
             />
           ) : (

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { useReveal } from "@/hooks/useReveal";
 import type { Room, Room as RoomType, SiteSettings } from "@/lib/data";
@@ -120,10 +121,12 @@ function GallerySection({ room }: { room: Room }) {
           className="reveal rounded-2xl overflow-hidden bg-[var(--color-surface)] aspect-[16/9] md:aspect-[21/9] flex items-center justify-center mb-4"
         >
           {room.images[activeIdx]?.src ? (
-            <img
+            <Image
               src={room.images[activeIdx].src}
               alt={room.images[activeIdx].alt || "Foto principal"}
-              className="w-full h-full object-cover"
+              fill
+              sizes="90vw"
+              className="object-cover"
             />
           ) : (
             <div className="flex flex-col items-center gap-3 text-[var(--color-text-muted)]">
@@ -140,6 +143,7 @@ function GallerySection({ room }: { room: Room }) {
               key={img.id}
               data-stagger-child
               onClick={() => setActiveIdx(idx)}
+              aria-label={`Ver foto ${idx + 1}: ${img.alt}`}
               className={`shrink-0 w-24 h-24 md:w-32 md:h-32 rounded-xl overflow-hidden bg-[var(--color-surface)] flex items-center justify-center transition-all duration-300 border-2 ${
                 activeIdx === idx
                   ? "border-[var(--color-primary)] shadow-md"
@@ -147,7 +151,7 @@ function GallerySection({ room }: { room: Room }) {
               }`}
             >
               {img.src ? (
-                <img src={img.src} alt={img.alt} className="w-full h-full object-cover" loading="lazy" />
+                <Image src={img.src} alt={img.alt} fill sizes="120px" className="object-cover" loading="lazy" />
               ) : (
                 <div className="flex flex-col items-center gap-1 text-[var(--color-text-muted)]">
                   <ImageIcon className="w-5 h-5 opacity-20" />
@@ -331,7 +335,7 @@ function AlsoLike({ currentSlug, rooms }: { currentSlug: string; rooms: Room[] }
               {/* Image */}
               <div className="relative h-48 overflow-hidden bg-[var(--color-surface-alt)] flex items-center justify-center">
                 {room.images[0]?.src ? (
-                  <img src={room.images[0].src} alt={room.name} className="absolute inset-0 w-full h-full object-cover" loading="lazy" />
+                  <Image src={room.images[0].src} alt={room.name} fill sizes="(max-width: 640px) 100vw, 33vw" className="object-cover" loading="lazy" />
                 ) : (
                   <div className="flex flex-col items-center gap-2 text-[var(--color-text-muted)]">
                     <ImageIcon className="w-8 h-8 opacity-20" />

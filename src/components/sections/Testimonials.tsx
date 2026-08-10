@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useReveal } from "@/hooks/useReveal";
 import { useCardTilt } from "@/hooks/useCardTilt";
 import { Star, Quote } from "lucide-react";
@@ -40,7 +41,7 @@ function TestimonialCard({ t }: { t: Testimonial }) {
           {/* Avatar */}
           <div className="w-11 h-11 rounded-full bg-[var(--color-surface)] shrink-0 flex items-center justify-center overflow-hidden transition-all duration-500 group-hover:ring-2 group-hover:ring-[var(--color-primary)]/20 group-hover:ring-offset-2">
             {t.avatar ? (
-              <img src={t.avatar} alt={t.name} className="w-full h-full object-cover" loading="lazy" />
+              <Image src={t.avatar} alt={t.name} width={44} height={44} className="object-cover" loading="lazy" />
             ) : (
               <span className="text-sm font-medium text-[var(--color-primary)]">
                 {t.name.charAt(0)}

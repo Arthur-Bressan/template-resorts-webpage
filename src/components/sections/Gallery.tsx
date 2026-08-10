@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useReveal } from "@/hooks/useReveal";
 import { useCardTilt } from "@/hooks/useCardTilt";
 import { ImageIcon, X, ChevronLeft, ChevronRight, Expand } from "lucide-react";
@@ -16,15 +17,18 @@ function GalleryItem({ img, idx, onClick }: { img: GalleryImage; idx: number; on
       data-stagger-child
       data-cursor="card"
       data-cursor-label="Abrir"
+      aria-label={`Abrir imagem: ${img.alt}`}
       className={`${img.span} relative rounded-xl overflow-hidden group cursor-pointer focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/50 focus:ring-offset-2 bg-[var(--color-surface-alt)]`}
     >
       <div className="w-full h-full flex items-center justify-center">
         {/* Gallery image */}
         {img.src ? (
-          <img
+          <Image
             src={img.src}
             alt={img.alt}
-            className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
+            fill
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            className="object-cover transition-transform duration-700 ease-out group-hover:scale-110"
             loading="lazy"
           />
         ) : (
@@ -139,10 +143,12 @@ export function Gallery({ galleryImages }: GalleryProps) {
           </button>
           <div className="flex items-center justify-center w-full max-w-4xl aspect-video rounded-xl bg-[var(--color-surface)]">
             {galleryImages[lightbox].src ? (
-              <img
+              <Image
                 src={galleryImages[lightbox].src}
                 alt={galleryImages[lightbox].alt}
-                className="w-full h-full object-contain rounded-xl"
+                fill
+                sizes="90vw"
+                className="object-contain rounded-xl"
               />
             ) : (
               <div className="flex flex-col items-center gap-3 text-[var(--color-text-muted)]">

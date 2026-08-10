@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useReveal } from "@/hooks/useReveal";
 import { useCardTilt } from "@/hooks/useCardTilt";
 import { Clock, Mountain, ImageIcon } from "lucide-react";
@@ -19,10 +20,12 @@ function ExperienceCard({ exp, idx }: { exp: Experience; idx: number }) {
         {/* Image area */}
         <div className="relative h-52 overflow-hidden bg-[var(--color-surface-alt)] flex items-center justify-center">
           {exp.image ? (
-            <img
+            <Image
               src={exp.image}
               alt={exp.title}
-              className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110 group-hover:-translate-y-2"
+              fill
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+              className="object-cover transition-transform duration-700 ease-out group-hover:scale-110 group-hover:-translate-y-2"
               loading="lazy"
             />
           ) : (
