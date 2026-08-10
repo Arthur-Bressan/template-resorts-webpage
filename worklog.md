@@ -447,3 +447,31 @@ Stage Summary:
 - 14 chapters with 61 headings, 15+ data tables, info boxes, code blocks
 - Professional formatting with forest green theme matching the project
 - TOC auto-generated with 61 entries across 3 levels
+
+---
+Task ID: hero-motion-enhancement
+Agent: Main Orchestrator
+Task: Enhance Hero section with Framer Motion stagger, spring CTA buttons, 3D mouse parallax
+
+Work Log:
+- Installed `motion` v13.1.0 (React 19 compatible Framer Motion)
+- Rewrote Hero.tsx combining Motion (declarative) + GSAP (scroll-based):
+  - Parent `motion.div` with `variants={staggerContainer}` (staggerChildren: 0.18, delayChildren: 0.25)
+  - 4 variant types: staggerContainer, fadeUp (blur+translate), scaleUp (spring bounce), ctaFade (scale+fade)
+  - Primary CTA: `whileHover` spring (scale 1.06, y -3, glow shadow) + `whileTap` spring (scale 0.94)
+  - Secondary CTA: same spring with bg/border color transitions on hover
+  - 3D mouse parallax: useMotionValue + useSpring(damped) + useTransform for rotateX/Y, translateX/Y, scale
+  - Perspective 800px with preserve-3d on image wrapper
+  - Mouse spotlight: radial-gradient vignette following cursor position
+  - Scroll indicator with looping scaleY + opacity animation
+  - GSAP ScrollTrigger preserved for scroll-based zoom (scrub)
+  - Fixed `useTransform` hook call inside JSX style prop (moved to component level as `spotlightBg`)
+  - Added `qualities: [75, 90]` to next.config.ts to fix image quality warning
+- Clean lint (0 errors)
+- Server compiles successfully: GET / 200 in 4.6s
+
+Stage Summary:
+- New dependency: motion@13.1.0 (Framer Motion for React 19)
+- Hero.tsx: 337 lines, fully rewritten with Motion + GSAP hybrid
+- Technologies combined: Motion (stagger, spring gestures, 3D parallax) + GSAP ScrollTrigger (scroll zoom)
+- Files modified: src/components/sections/Hero.tsx, next.config.ts, package.json
