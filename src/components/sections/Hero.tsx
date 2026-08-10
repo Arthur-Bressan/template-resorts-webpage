@@ -10,19 +10,44 @@ interface HeroProps {
 
 export function Hero({ siteSettings }: HeroProps) {
   const sectionRef = useRef<HTMLElement>(null);
+  const imageRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!sectionRef.current) return;
+    if (!sectionRef.current || !imageRef.current) return;
+    const section = sectionRef.current;
+    const image = imageRef.current;
     const reducedMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)"
     ).matches;
-    if (reducedMotion) return;
+
+    // Mouse tracking state
+    const mouse = { x: 0.5, y: 0.5 };
+    const pos = { x: 0, y: 0 };
+    let rafId = 0;
+    let currentZoom = 1.15;
+
+    // Smooth interpolation loop for mouse pan
+    function animatePan() {
+      const targetX = (mouse.x - 0.5) * 30;
+      const targetY = (mouse.y - 0.5) * 20;
+
+      pos.x += (targetX - pos.x) * 0.05;
+      pos.y += (targetY - pos.y) * 0.05;
+
+      image.style.transform = `translate(${pos.x}px, ${pos.y}px) scale(${currentZoom})`;
+      rafId = requestAnimationFrame(animatePan);
+    }
+
+    function onMouseMove(e: MouseEvent) {
+      const rect = section.getBoundingClientRect();
+      mouse.x = (e.clientX - rect.left) / rect.width;
+      mouse.y = (e.clientY - rect.top) / rect.height;
+    }
 
     const ctx = gsap.context(() => {
-      const lines = sectionRef.current?.querySelectorAll<HTMLElement>(
-        ".hero-line"
-      );
-      if (lines?.length) {
+      // Text reveal animations
+      const lines = section.querySelectorAll<HTMLElement>(".hero-line");
+      if (lines.length) {
         gsap.set(lines, { yPercent: 110 });
         gsap.to(lines, {
           yPercent: 0,
@@ -34,8 +59,8 @@ export function Hero({ siteSettings }: HeroProps) {
       }
 
       const fadeEls =
-        sectionRef.current?.querySelectorAll<HTMLElement>(".hero-fade");
-      if (fadeEls?.length) {
+        section.querySelectorAll<HTMLElement>(".hero-fade");
+      if (fadeEls.length) {
         gsap.set(fadeEls, { opacity: 0, y: 20 });
         gsap.to(fadeEls, {
           opacity: 1,
@@ -46,9 +71,32 @@ export function Hero({ siteSettings }: HeroProps) {
           delay: 0.8,
         });
       }
+
+      if (reducedMotion) return;
+
+      // Scroll-based zoom: zoom in when scrolling down, zoom out when back up
+      ScrollTrigger.create({
+        trigger: section,
+        start: "top top",
+        end: "bottom top",
+        scrub: true,
+        onUpdate: (self) => {
+          const progress = self.progress;
+          // Scale from 1.15 to 1.35 as user scrolls down
+          currentZoom = 1.15 + progress * 0.2;
+        },
+      });
+
+      // Start mouse parallax loop
+      section.addEventListener("mousemove", onMouseMove);
+      rafId = requestAnimationFrame(animatePan);
     }, sectionRef);
 
-    return () => ctx.revert();
+    return () => {
+      ctx.revert();
+      cancelAnimationFrame(rafId);
+      section.removeEventListener("mousemove", onMouseMove);
+    };
   }, []);
 
   const handleReserve = () =>
@@ -60,25 +108,32 @@ export function Hero({ siteSettings }: HeroProps) {
     <section
       ref={sectionRef}
       id="hero"
-      className="relative min-h-screen flex items-center justify-center overflow-hidden"
+      className="relative min-h-screen flex items-center justify-center overflow-hidden cursor-crosshair"
     >
-      {/* Background skeleton — substitute by your own image */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#3F5A48] via-[#29392F] to-[#2E2A22]" />
-
-      {/* Decorative pattern */}
-      <div className="absolute inset-0 opacity-[0.04]">
-        <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-              <path d="M 40 0 L 0 0 0 40" fill="none" stroke="white" strokeWidth="0.5" />
-            </pattern>
-          </defs>
-          <rect width="100%" height="100%" fill="url(#grid)" />
-        </svg>
+      {/* Background Image with parallax + zoom */}
+      <div className="absolute inset-[-5%]">
+        <div
+          ref={imageRef}
+          className="absolute inset-0 bg-cover bg-center will-change-transform"
+          style={{
+            backgroundImage: "url('/images/hero.jpg')",
+            transform: "translate(0px, 0px) scale(1.15)",
+          }}
+        />
       </div>
 
-      {/* Gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/20" />
+      {/* Dark gradient overlays for text readability */}
+      <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/20 to-black/60" />
+      <div className="absolute inset-0 bg-gradient-to-r from-black/30 via-transparent to-black/30" />
+
+      {/* Subtle vignette */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.4) 100%)",
+        }}
+      />
 
       {/* Content */}
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center py-32">
@@ -130,7 +185,7 @@ export function Hero({ siteSettings }: HeroProps) {
       </div>
 
       {/* Scroll indicator */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2">
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 z-10">
         <span className="text-xs text-white/50 tracking-widest uppercase">
           Scroll
         </span>
