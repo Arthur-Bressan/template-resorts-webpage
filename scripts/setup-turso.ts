@@ -37,7 +37,7 @@ const { url: cleanUrl, authToken } = parseLibsqlUrl(databaseUrl)
 
 // All Prisma model table names (must match schema)
 const TABLE_NAMES = [
-  'RoomImage', 'RoomAmenity', 'Reservation',
+  'UploadedImage', 'RoomImage', 'RoomAmenity', 'Reservation',
   'Room', 'Experience', 'GalleryImage',
   'Testimonial', 'Faq', 'AboutAmenity',
   'Distance', 'Direction', 'SensoryConfig',

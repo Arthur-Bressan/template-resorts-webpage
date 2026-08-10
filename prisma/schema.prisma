@@ -180,6 +180,16 @@ model Stat {
   sortOrder Int   @default(0)
 }
 
+// ─── UPLOADED IMAGES (stored in DB) ───
+model UploadedImage {
+  id        String   @id @default(cuid())
+  filename  String
+  mimeType  String
+  data      String   // base64 encoded image data
+  size      Int      // original file size in bytes
+  createdAt DateTime @default(now())
+}
+
 // ─── FORM SUBMISSIONS ───
 model NewsletterSubscriber {
   id        String   @id @default(cuid())
