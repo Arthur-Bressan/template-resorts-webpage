@@ -11,6 +11,117 @@ import { Separator } from '@/components/ui/separator'
 import { ImageUpload } from '@/components/admin/ImageUpload'
 import { adminApi } from '@/lib/admin-client'
 import { toast } from 'sonner'
+import { Upload, X, ImageIcon } from 'lucide-react'
+
+// ─── Hero Image Upload (large banner preview) ───
+function HeroImageUpload({ value, onChange }: { value: string; onChange: (url: string) => void }) {
+  const [mode, setMode] = useState<'url' | 'file'>('url')
+  const [urlInput, setUrlInput] = useState(value || '')
+  const [uploading, setUploading] = useState(false)
+  const [error, setError] = useState('')
+
+  const handleUrlSubmit = () => {
+    if (urlInput.trim()) {
+      onChange(urlInput.trim())
+      setError('')
+    }
+  }
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploading(true)
+    setError('')
+    try {
+      const res = await adminApi.upload(file)
+      const url = res?.url || res?.src || ''
+      if (url) {
+        onChange(url)
+        setUrlInput(url)
+      } else {
+        setError('Upload retornou sem URL')
+      }
+    } catch {
+      setError('Falha no upload')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  return (
+    <div className="space-y-3">
+      {/* Large banner preview */}
+      {value ? (
+        <div className="relative group overflow-hidden rounded-xl border border-gray-200">
+          <div className="relative w-full aspect-[16/7] bg-gray-100">
+            <img
+              src={value}
+              alt="Preview do Hero"
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/20" />
+            <div className="absolute bottom-3 left-3">
+              <span className="inline-flex items-center gap-1 rounded-full bg-white/20 backdrop-blur-sm px-3 py-1 text-xs text-white">
+                Mata Atlântica — Cunha, SP
+              </span>
+            </div>
+            <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <label className="cursor-pointer rounded-lg bg-white/90 backdrop-blur-sm p-1.5 text-gray-700 hover:bg-white shadow-sm">
+                <Upload className="h-4 w-4" />
+                <input type="file" accept="image/*" className="hidden" onChange={handleFileChange} disabled={uploading} />
+              </label>
+              <button
+                type="button"
+                onClick={() => { onChange(''); setUrlInput('') }}
+                className="rounded-lg bg-red-500/90 backdrop-blur-sm p-1.5 text-white hover:bg-red-600 shadow-sm"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="w-full aspect-[16/7] rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center gap-2 bg-gray-50 hover:bg-gray-100 transition-colors">
+          <ImageIcon className="h-8 w-8 text-gray-400" />
+          <span className="text-sm text-gray-500">Nenhuma imagem de hero definida</span>
+        </div>
+      )}
+
+      {/* Controls */}
+      <div className="flex items-center gap-2">
+        <Button type="button" variant={mode === 'url' ? 'default' : 'outline'} size="sm" onClick={() => setMode('url')}>
+          URL
+        </Button>
+        <Button type="button" variant={mode === 'file' ? 'default' : 'outline'} size="sm" onClick={() => setMode('file')}>
+          <Upload className="mr-1 h-3 w-3" />
+          Upload
+        </Button>
+      </div>
+
+      {mode === 'url' ? (
+        <div className="flex gap-2">
+          <Input
+            value={urlInput}
+            onChange={(e) => setUrlInput(e.target.value)}
+            placeholder="https://exemplo.com/imagem-hero.jpg"
+            onKeyDown={(e) => e.key === 'Enter' && handleUrlSubmit()}
+          />
+          <Button type="button" size="sm" onClick={handleUrlSubmit}>Aplicar</Button>
+        </div>
+      ) : (
+        <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-gray-300 p-3 hover:border-gray-400 transition-colors">
+          <ImageIcon className="h-5 w-5 text-gray-400" />
+          <span className="text-sm text-gray-500">
+            {uploading ? 'Enviando...' : 'Clique para selecionar uma imagem (recomendado: 1344×768)'}
+          </span>
+          <input type="file" accept="image/*" className="hidden" onChange={handleFileChange} disabled={uploading} />
+        </label>
+      )}
+
+      {error && <p className="text-sm text-red-500">{error}</p>}
+    </div>
+  )
+}
 
 interface SiteSettings {
   id: string
@@ -27,6 +138,7 @@ interface SiteSettings {
   facebook: string
   tripadvisor: string
   logo: string
+  heroImage: string
   ogImage: string
   metaTitle: string
   metaDescription: string
@@ -37,7 +149,7 @@ interface SiteSettings {
 const defaults: SiteSettings = {
   id: 'main', name: '', tagline: '', description: '', phone: '', whatsapp: '',
   email: '', address: '', lat: -23.18, lng: -44.92, instagram: '', facebook: '',
-  tripadvisor: '', logo: '', ogImage: '', metaTitle: '', metaDescription: '',
+  tripadvisor: '', logo: '', heroImage: '', ogImage: '', metaTitle: '', metaDescription: '',
   googleAnalyticsId: '', googleMapsApiKey: '',
 }
 
@@ -129,6 +241,15 @@ export default function SettingsPage() {
             <CardHeader><CardTitle className="text-lg">Marca</CardTitle></CardHeader>
             <CardContent className="space-y-6">
               <ImageUpload value={data.logo} onChange={(url) => set('logo', url)} label="Logo" />
+              <Separator />
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-gray-700">
+                  Imagem do Hero
+                  <span className="ml-1 text-xs font-normal text-gray-400">(banner principal do topo do site)</span>
+                </p>
+                <HeroImageUpload value={data.heroImage} onChange={(url) => set('heroImage', url)} />
+              </div>
+              <Separator />
               <ImageUpload value={data.ogImage} onChange={(url) => set('ogImage', url)} label="Imagem OG (compartilhamento)" />
             </CardContent>
           </Card>

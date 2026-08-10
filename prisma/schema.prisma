@@ -34,6 +34,7 @@ model SiteSetting {
   facebook    String   @default("")
   tripadvisor String   @default("")
   logo        String   @default("/logo.svg")
+  heroImage   String   @default("/images/hero.jpg")
   ogImage     String   @default("/logo.svg")
   metaTitle       String @default("")
   metaDescription String @default("")

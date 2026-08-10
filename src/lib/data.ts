@@ -17,6 +17,7 @@ export interface SiteSettings {
   facebook: string
   tripadvisor: string
   logo: string
+  heroImage: string
   ogImage: string
   metaTitle: string
   metaDescription: string
@@ -170,6 +171,7 @@ const FALLBACK_SETTINGS: SiteSettings = {
   facebook: '',
   tripadvisor: '',
   logo: '/logo.svg',
+  heroImage: '/images/hero.jpg',
   ogImage: '/logo.svg',
   metaTitle: '',
   metaDescription: '',

@@ -116,7 +116,7 @@ export function Hero({ siteSettings }: HeroProps) {
           ref={imageRef}
           className="absolute inset-0 bg-cover bg-center will-change-transform"
           style={{
-            backgroundImage: "url('/images/hero.jpg')",
+            backgroundImage: `url('${siteSettings.heroImage || '/images/hero.jpg'}')`,
             transform: "translate(0px, 0px) scale(1.15)",
           }}
         />
