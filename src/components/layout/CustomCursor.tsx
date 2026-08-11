@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { gsap } from "gsap";
 
 type CursorType = "default" | "link" | "card" | "input";
@@ -8,48 +8,97 @@ type CursorType = "default" | "link" | "card" | "input";
 const HALO_SIZE = 40;
 const HALO_HALF = HALO_SIZE / 2;
 const MORPH_PAD = 2; // px padding around element border
+const LERP_SPEED = 10; // frame-rate-independent smoothing
+const CURSOR_Z = 2147483647; // max 32-bit int — above any stacking context
 
 export function CustomCursor() {
-  const dotRef = useRef<HTMLDivElement>(null);
-  const haloRef = useRef<HTMLDivElement>(null);
-  const labelRef = useRef<HTMLSpanElement>(null);
-
   useEffect(() => {
     const mqFine = window.matchMedia("(pointer: fine) and (hover: hover)");
     const mqReduced = window.matchMedia("(prefers-reduced-motion: reduce)");
 
-    // On touch / reduced-motion: bail out — elements stay invisible, native cursor works
+    // On touch / reduced-motion: bail out — native cursor works
     if (!mqFine.matches || mqReduced.matches) return;
 
-    const dot = dotRef.current;
-    const halo = haloRef.current;
-    const label = labelRef.current;
-    if (!dot || !halo) return;
+    // ── Create cursor elements directly on document.body ──
+    // This guarantees the cursor is outside any stacking context (overflow:hidden,
+    // z-index, transform, etc.) and always visible above everything.
 
-    // ── Initial state: off-screen, invisible via GSAP (not CSS) ──
+    const dot = document.createElement("div");
+    dot.setAttribute("aria-hidden", "true");
+    Object.assign(dot.style, {
+      position: "fixed",
+      top: "0",
+      left: "0",
+      width: "6px",
+      height: "6px",
+      marginLeft: "-3px",
+      marginTop: "-3px",
+      borderRadius: "50%",
+      backgroundColor: "white",
+      pointerEvents: "none",
+      zIndex: String(CURSOR_Z),
+      willChange: "transform",
+      mixBlendMode: "difference",
+      opacity: "0",
+    });
+    document.body.appendChild(dot);
+
+    const halo = document.createElement("div");
+    halo.setAttribute("aria-hidden", "true");
+    Object.assign(halo.style, {
+      position: "fixed",
+      top: "0",
+      left: "0",
+      width: `${HALO_SIZE}px`,
+      height: `${HALO_SIZE}px`,
+      marginLeft: `-${HALO_HALF}px`,
+      marginTop: `-${HALO_HALF}px`,
+      borderRadius: "50%",
+      border: "1.5px solid white",
+      pointerEvents: "none",
+      zIndex: String(CURSOR_Z),
+      willChange: "transform",
+      mixBlendMode: "difference",
+      opacity: "0",
+    });
+    document.body.appendChild(halo);
+
+    const label = document.createElement("span");
+    Object.assign(label.style, {
+      position: "absolute",
+      inset: "0",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      fontFamily: "var(--font-sans, system-ui, sans-serif)",
+      fontSize: "11px",
+      fontWeight: "600",
+      letterSpacing: "0.02em",
+      color: "white",
+      whiteSpace: "nowrap",
+      opacity: "0",
+      transform: "scale(0.8)",
+      userSelect: "none",
+      pointerEvents: "none",
+    });
+    label.textContent = "Ver mais";
+    halo.appendChild(label);
+
+    // ── GSAP initial state: off-screen, invisible ──
     gsap.set(dot, { x: -100, y: -100, opacity: 0, scale: 1, force3D: true });
     gsap.set(halo, { x: -100, y: -100, opacity: 0, scale: 1, force3D: true });
-
-    // ── gsap.quickTo for halo organic lag ──
-    const haloX = gsap.quickTo(halo, "x", {
-      duration: 0.35,
-      ease: "power3.out",
-    });
-    const haloY = gsap.quickTo(halo, "y", {
-      duration: 0.35,
-      ease: "power3.out",
-    });
 
     // ── State ──
     let cursorType: CursorType = "default";
     let isActive = false;
-    let hasMoved = false;
     let mouseX = 0;
     let mouseY = 0;
+    let haloX = -100;
+    let haloY = -100;
     let morphTarget: HTMLElement | null = null;
-    let tickerActive = false;
+    let morphing = false; // true during gsap.to enter/exit transitions
 
-    // ── Show / Hide (controls native cursor hiding too) ──
+    // ── Show / Hide ──
     const show = () => {
       if (isActive) return;
       isActive = true;
@@ -72,69 +121,19 @@ export function CustomCursor() {
       document.documentElement.classList.remove("custom-cursor-active");
     };
 
-    // ── Sync halo to element (used by ticker and scroll/resize) ──
-    const syncHaloToElement = (el: HTMLElement) => {
-      const rect = el.getBoundingClientRect();
-      const hasTilt = el.hasAttribute("data-tilt-x");
-
-      // For 3D-tilted elements: use layout dimensions (offsetWidth) so the halo's
-      // own perspective transform produces the same visual projection.
-      // For non-tilt elements (buttons with scale): use projected bounding rect.
-      const w = (hasTilt ? el.offsetWidth : rect.width) + MORPH_PAD * 2;
-      const h = (hasTilt ? el.offsetHeight : rect.height) + MORPH_PAD * 2;
-
-      if (w <= 0 || h <= 0) return;
-
-      const setProps: gsap.TweenVars = {
-        x: rect.left + rect.width / 2,
-        y: rect.top + rect.height / 2,
-        width: w,
-        height: h,
-        marginLeft: -w / 2,
-        marginTop: -h / 2,
-      };
-
-      // Copy 3D tilt from element to halo for perfect visual alignment
-      if (hasTilt) {
-        setProps.rotateX = parseFloat(el.dataset.tiltX || "0");
-        setProps.rotateY = parseFloat(el.dataset.tiltY || "0");
-        setProps.transformPerspective = 800;
-      }
-
-      gsap.set(halo, setProps);
-    };
-
-    // ── Continuous tracking: runs every frame while morphTarget is active ──
-    const startTracking = () => {
-      if (tickerActive) return;
-      tickerActive = true;
-      gsap.ticker.add(tickerFn);
-    };
-
-    const stopTracking = () => {
-      if (!tickerActive) return;
-      tickerActive = false;
-      gsap.ticker.remove(tickerFn);
-    };
-
-    const tickerFn = () => {
-      if (!morphTarget) return;
-      syncHaloToElement(morphTarget);
-    };
-
     // ── Morph: ring → element border (entry transition with easing) ──
+    // Uses only 2D bounding rect — NO 3D rotation on the halo.
+    // This avoids shear/parallelogram artifacts from perspective mismatch.
     const enterMorph = (target: HTMLElement) => {
-      // Stop any previous tracking (switching between morph targets)
-      stopTracking();
-
       morphTarget = target;
+      morphing = true;
+
       const rect = target.getBoundingClientRect();
       const br = getComputedStyle(target).borderRadius;
-      const hasTilt = target.hasAttribute("data-tilt-x");
-      const w = (hasTilt ? target.offsetWidth : rect.width) + MORPH_PAD * 2;
-      const h = (hasTilt ? target.offsetHeight : rect.height) + MORPH_PAD * 2;
+      const w = rect.width + MORPH_PAD * 2;
+      const h = rect.height + MORPH_PAD * 2;
 
-      const toProps: gsap.TweenVars = {
+      gsap.to(halo, {
         width: w,
         height: h,
         marginLeft: -w / 2,
@@ -144,58 +143,78 @@ export function CustomCursor() {
         borderRadius: br,
         borderWidth: 2,
         scale: 1,
-        scaleY: 1,
         scaleX: 1,
+        scaleY: 1,
         duration: 0.4,
         ease: "power3.out",
         overwrite: "auto",
         onComplete: () => {
           // Only start continuous tracking if still morphed to THIS element
-          if (morphTarget === target) startTracking();
+          if (morphTarget === target) morphing = false;
         },
-      };
-
-      // Include 3D tilt in entry animation for smooth transition from circle
-      if (hasTilt) {
-        toProps.rotateX = parseFloat(target.dataset.tiltX || "0");
-        toProps.rotateY = parseFloat(target.dataset.tiltY || "0");
-        toProps.transformPerspective = 800;
-      }
-
-      gsap.to(halo, toProps);
+      });
     };
 
     // ── Morph: element border → ring (exit transition with easing) ──
     const leaveMorph = () => {
       morphTarget = null;
-      // Stop continuous tracking — no more per-frame syncing
-      stopTracking();
+      morphing = true;
 
       gsap.to(halo, {
         width: HALO_SIZE,
         height: HALO_SIZE,
         marginLeft: -HALO_HALF,
         marginTop: -HALO_HALF,
+        x: mouseX,
+        y: mouseY,
         borderRadius: "50%",
         borderWidth: 1.5,
-        rotateX: 0,
-        rotateY: 0,
         scale: 1,
         duration: 0.35,
         ease: "power2.out",
         overwrite: "auto",
+        onComplete: () => {
+          morphing = false;
+          // Sync lerp position so it resumes smoothly from the mouse
+          haloX = mouseX;
+          haloY = mouseY;
+        },
       });
-
-      // Kick halo back toward mouse immediately (don't wait for next mousemove)
-      haloX(mouseX);
-      haloY(mouseY);
     };
 
-    // ── Update morph position on scroll/resize (backup for ticker gaps) ──
-    const updateMorphPosition = () => {
-      if (!morphTarget) return;
-      syncHaloToElement(morphTarget);
+    // ── Single master ticker loop — always runs, never add/remove ──
+    // Eliminates dual-loop conflicts. Uses morphing flag to decide behavior:
+    //   morphing=true  → gsap.to is handling the halo (entry/exit) — don't interfere
+    //   morphTarget     → track element 2D bounding box via gsap.set
+    //   otherwise      → lerp halo toward mouse (frame-rate-independent)
+    const tickerFn = (_time: number, deltaTime: number) => {
+      if (!isActive || morphing) return;
+
+      if (morphTarget) {
+        // ── Tracking mode: sync to element's 2D projected bounding box ──
+        const rect = morphTarget.getBoundingClientRect();
+        const w = rect.width + MORPH_PAD * 2;
+        const h = rect.height + MORPH_PAD * 2;
+        if (w > 0 && h > 0) {
+          gsap.set(halo, {
+            x: rect.left + rect.width / 2,
+            y: rect.top + rect.height / 2,
+            width: w,
+            height: h,
+            marginLeft: -w / 2,
+            marginTop: -h / 2,
+          });
+        }
+      } else {
+        // ── Normal mode: frame-rate-independent lerp toward mouse ──
+        const dt = deltaTime / 1000;
+        const factor = 1 - Math.exp(-LERP_SPEED * dt);
+        haloX += (mouseX - haloX) * factor;
+        haloY += (mouseY - haloY) * factor;
+        gsap.set(halo, { x: haloX, y: haloY });
+      }
     };
+    gsap.ticker.add(tickerFn);
 
     // ── Cursor Type Transitions ──
     const setType = (
@@ -205,7 +224,7 @@ export function CustomCursor() {
     ) => {
       if (
         cursorType === type &&
-        (!labelText || !label || label.textContent === labelText) &&
+        (!labelText || label.textContent === labelText) &&
         (type !== "card" || morphElement === morphTarget)
       )
         return;
@@ -216,13 +235,10 @@ export function CustomCursor() {
       }
 
       cursorType = type;
-      if (label && labelText) {
-        label.textContent = labelText;
-      }
+      if (labelText) label.textContent = labelText;
 
       // NOTE: Do NOT use gsap.killTweensOf here — it would kill the
-      // halo x/y tweens created by gsap.quickTo(), freezing position.
-      // Instead, each gsap.to() uses overwrite: "auto" to handle conflicts.
+      // halo x/y tweens, freezing position. Each gsap.to uses overwrite:"auto".
 
       switch (type) {
         case "link":
@@ -242,13 +258,17 @@ export function CustomCursor() {
             ease: "power2.out",
             overwrite: "auto",
           });
-          if (label)
-            gsap.to(label, { opacity: 0, scale: 0.8, duration: 0.15, overwrite: "auto" });
+          gsap.to(label, {
+            opacity: 0,
+            scale: 0.8,
+            duration: 0.15,
+            overwrite: "auto",
+          });
           break;
 
         case "card":
-          // Dot: hidden for legacy (no morph), visible when morphing
           if (morphElement) {
+            // Morph mode: dot visible, ring becomes border
             gsap.to(dot, {
               scale: 1,
               opacity: 1,
@@ -256,9 +276,21 @@ export function CustomCursor() {
               overwrite: "auto",
             });
             enterMorph(morphElement);
+            // Hide label during morph — border IS the element
+            gsap.to(label, {
+              opacity: 0,
+              scale: 0.8,
+              duration: 0.15,
+              overwrite: "auto",
+            });
           } else {
             // Legacy: no .cursor-hover-target, just scale halo
-            gsap.to(dot, { scale: 0, opacity: 0, duration: 0.2, overwrite: "auto" });
+            gsap.to(dot, {
+              scale: 0,
+              opacity: 0,
+              duration: 0.2,
+              overwrite: "auto",
+            });
             gsap.to(halo, {
               scale: 2.2,
               scaleY: 1,
@@ -268,23 +300,32 @@ export function CustomCursor() {
               ease: "power2.out",
               overwrite: "auto",
             });
+            if (labelText)
+              gsap.to(label, {
+                opacity: 1,
+                scale: 0.45,
+                duration: 0.25,
+                delay: 0.08,
+                ease: "back.out(1.7)",
+                overwrite: "auto",
+              });
+            else
+              gsap.to(label, {
+                opacity: 0,
+                scale: 0.8,
+                duration: 0.15,
+                overwrite: "auto",
+              });
           }
-          // Label: show if text provided
-          if (label && labelText)
-            gsap.to(label, {
-              opacity: 1,
-              scale: 0.45,
-              duration: 0.25,
-              delay: 0.08,
-              ease: "back.out(1.7)",
-              overwrite: "auto",
-            });
-          else if (label)
-            gsap.to(label, { opacity: 0, scale: 0.8, duration: 0.15, overwrite: "auto" });
           break;
 
         case "input":
-          gsap.to(dot, { scale: 0, opacity: 0, duration: 0.2, overwrite: "auto" });
+          gsap.to(dot, {
+            scale: 0,
+            opacity: 0,
+            duration: 0.2,
+            overwrite: "auto",
+          });
           gsap.to(halo, {
             scale: 0.8,
             scaleY: 0.3,
@@ -295,8 +336,12 @@ export function CustomCursor() {
             ease: "power2.out",
             overwrite: "auto",
           });
-          if (label)
-            gsap.to(label, { opacity: 0, scale: 0.8, duration: 0.15, overwrite: "auto" });
+          gsap.to(label, {
+            opacity: 0,
+            scale: 0.8,
+            duration: 0.15,
+            overwrite: "auto",
+          });
           break;
 
         default:
@@ -317,8 +362,12 @@ export function CustomCursor() {
             ease: "power2.out",
             overwrite: "auto",
           });
-          if (label)
-            gsap.to(label, { opacity: 0, scale: 0.8, duration: 0.15, overwrite: "auto" });
+          gsap.to(label, {
+            opacity: 0,
+            scale: 0.8,
+            duration: 0.15,
+            overwrite: "auto",
+          });
           break;
       }
     };
@@ -328,18 +377,15 @@ export function CustomCursor() {
       mouseX = e.clientX;
       mouseY = e.clientY;
 
-      if (!isActive) show();
+      if (!isActive) {
+        // First move: initialize halo position to prevent flash
+        haloX = mouseX;
+        haloY = mouseY;
+        show();
+      }
+
       // Dot always follows mouse instantly
       gsap.set(dot, { x: mouseX, y: mouseY });
-
-      // Halo follows mouse only when NOT morphed to an element
-      if (!hasMoved) {
-        gsap.set(halo, { x: mouseX, y: mouseY });
-        hasMoved = true;
-      } else if (!morphTarget) {
-        haloX(mouseX);
-        haloY(mouseY);
-      }
     };
 
     // ── Detect cursor type from hovered element ──
@@ -419,8 +465,6 @@ export function CustomCursor() {
     document.addEventListener("mouseover", onMouseOver, true);
     document.addEventListener("mouseleave", onMouseLeaveViewport);
     document.addEventListener("keydown", onKeyDown, { passive: true });
-    window.addEventListener("scroll", updateMorphPosition, { passive: true });
-    window.addEventListener("resize", updateMorphPosition, { passive: true });
 
     // ── Media query change listeners ──
     const onFineChange = (e: MediaQueryListEvent) => {
@@ -432,94 +476,24 @@ export function CustomCursor() {
     mqFine.addEventListener("change", onFineChange);
     mqReduced.addEventListener("change", onReducedChange);
 
+    // ── Cleanup ──
     return () => {
+      gsap.ticker.remove(tickerFn);
       document.removeEventListener("mousemove", onMouseMove);
       document.removeEventListener("mouseover", onMouseOver, true);
       document.removeEventListener("mouseleave", onMouseLeaveViewport);
       document.removeEventListener("keydown", onKeyDown);
-      window.removeEventListener("scroll", updateMorphPosition);
-      window.removeEventListener("resize", updateMorphPosition);
       mqFine.removeEventListener("change", onFineChange);
       mqReduced.removeEventListener("change", onReducedChange);
       document.documentElement.classList.remove("custom-cursor-active");
-      stopTracking();
       gsap.killTweensOf([dot, halo, label]);
+      dot.remove();
+      halo.remove();
     };
   }, []);
 
-  return (
-    <>
-      {/* Central dot — follows mouse instantly */}
-      <div
-        ref={dotRef}
-        aria-hidden="true"
-        style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          width: 6,
-          height: 6,
-          marginLeft: -3,
-          marginTop: -3,
-          borderRadius: "50%",
-          backgroundColor: "white",
-          pointerEvents: "none",
-          zIndex: 9999,
-          willChange: "transform",
-          mixBlendMode: "difference",
-          opacity: 0,
-          transform: "translate(-100px, -100px)",
-        }}
-      />
-      {/* Outer halo — follows with organic lag; morphs to element border on .cursor-hover-target */}
-      <div
-        ref={haloRef}
-        aria-hidden="true"
-        style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          width: HALO_SIZE,
-          height: HALO_SIZE,
-          marginLeft: -HALO_HALF,
-          marginTop: -HALO_HALF,
-          borderRadius: "50%",
-          border: "1.5px solid white",
-          pointerEvents: "none",
-          zIndex: 9999,
-          willChange: "transform",
-          mixBlendMode: "difference",
-          opacity: 0,
-          transform: "translate(-100px, -100px)",
-        }}
-      >
-        <span
-          ref={labelRef}
-          style={{
-            position: "absolute",
-            inset: 0,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontFamily: "var(--font-sans, system-ui, sans-serif)",
-            fontSize: 11,
-            fontWeight: 600,
-            letterSpacing: "0.02em",
-            color: "white",
-            whiteSpace: "nowrap",
-            opacity: 0,
-            transform: "scale(0.8)",
-            userSelect: "none",
-            pointerEvents: "none",
-          }}
-        >
-          Ver mais
-        </span>
-      </div>
-      {/* Inject cursor:none style for native cursor hiding */}
-      <CursorStyleOverride />
-    </>
-  );
+  // The style tag stays in React tree for SSR safety + Tailwind CSS 4 compatibility
+  return <CursorStyleOverride />;
 }
 
 /**
@@ -529,13 +503,17 @@ export function CustomCursor() {
  */
 function CursorStyleOverride() {
   return (
-    <style dangerouslySetInnerHTML={{ __html: `
+    <style
+      dangerouslySetInnerHTML={{
+        __html: `
       html.custom-cursor-active,
       html.custom-cursor-active *,
       html.custom-cursor-active *::before,
       html.custom-cursor-active *::after {
         cursor: none !important;
       }
-    ` }} />
+    `,
+      }}
+    />
   );
 }
