@@ -59,10 +59,8 @@ const ctaFade: Variants = {
 const HOVER_SPRING = { type: "spring" as const, stiffness: 400, damping: 17, mass: 0.8 };
 const TAP_SPRING = { type: "spring" as const, stiffness: 500, damping: 15 };
 
-/* ─── Mouse parallax config ─── */
-const PARALLAX_INTENSITY = 12; // max degrees rotation
-const PARALLAX_MOVE = 18;     // max px translation
-const PERSPECTIVE = 800;      // px
+/* ─── Mouse horizontal drift config ─── */
+const DRIFT_MAX = 12; // max px horizontal translation
 
 interface HeroProps {
   siteSettings: SiteSettings;
@@ -80,22 +78,14 @@ export function Hero({ siteSettings }: HeroProps) {
   const smoothX = useSpring(mouseX, { stiffness: 40, damping: 30, restDelta: 0.001 });
   const smoothY = useSpring(mouseY, { stiffness: 40, damping: 30, restDelta: 0.001 });
 
-  /* ─── 3D transforms derived from mouse position ─── */
-  // Rotate Y (horizontal mouse → rotate around Y axis)
-  const rotateY = useTransform(smoothX, [0, 1], [PARALLAX_INTENSITY, -PARALLAX_INTENSITY]);
-  // Rotate X (vertical mouse → rotate around X axis, inverted)
-  const rotateX = useTransform(smoothY, [0, 1], [-PARALLAX_INTENSITY, PARALLAX_INTENSITY]);
-  // Subtle translate following mouse
-  const translateX = useTransform(smoothX, [0, 1], [PARALLAX_MOVE, -PARALLAX_MOVE]);
-  const translateY = useTransform(smoothY, [0, 1], [PARALLAX_MOVE, -PARALLAX_MOVE]);
-  // Light scale increase on edges (depth illusion)
-  const imageScale = useTransform(smoothX, [0, 0.5, 1], [1.18, 1.15, 1.18]);
+  /* ─── Subtle horizontal drift from mouse position ─── */
+  const translateX = useTransform(smoothX, [0, 1], [DRIFT_MAX, -DRIFT_MAX]);
 
-  /* ─── Radial vignette following mouse (subtle spotlight) ─── */
+  /* ─── Light overlay following mouse (visible glow) ─── */
   const spotlightBg = useTransform(
     [smoothX, smoothY],
     ([x, y]) =>
-      `radial-gradient(600px circle at ${x * 100}% ${y * 100}%, rgba(255,255,255,0.03) 0%, transparent 60%)`
+      `radial-gradient(450px circle at ${x * 100}% ${y * 100}%, rgba(255,248,220,0.12) 0%, rgba(255,255,255,0.06) 30%, transparent 70%)`
   );
 
   /* ─── Mouse move handler ─── */
@@ -164,21 +154,15 @@ export function Hero({ siteSettings }: HeroProps) {
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
     >
-      {/* ─── Background Image with 3D Parallax ─── */}
+      {/* ─── Background Image with subtle horizontal drift ─── */}
       <div
         ref={imageWrapperRef}
         className="absolute inset-[-5%] will-change-transform"
-        style={{ perspective: PERSPECTIVE }}
       >
         <motion.div
           className="w-full h-full"
           style={{
-            rotateX,
-            rotateY,
             x: translateX,
-            y: translateY,
-            scale: imageScale,
-            transformStyle: "preserve-3d",
           }}
         >
           <Image
@@ -199,9 +183,9 @@ export function Hero({ siteSettings }: HeroProps) {
       <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/15 to-black/50 pointer-events-none" />
       <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-black/20 pointer-events-none" />
 
-      {/* ─── Radial vignette following mouse (subtle spotlight) ─── */}
+      {/* ─── Light overlay following mouse ─── */}
       <motion.div
-        className="absolute inset-0 pointer-events-none"
+        className="absolute inset-0 pointer-events-none mix-blend-soft-light"
         style={{ background: spotlightBg }}
       />
 
