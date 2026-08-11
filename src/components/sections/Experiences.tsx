@@ -15,7 +15,7 @@ function ExperienceCard({ exp, idx }: { exp: Experience; idx: number }) {
       data-stagger-child
       data-cursor="card"
       data-cursor-label="Detalhes"
-      className="group relative rounded-2xl overflow-hidden bg-[var(--color-background)] shadow-md transition-shadow duration-500 hover:shadow-xl"
+      className="cursor-hover-target group relative rounded-2xl overflow-hidden bg-[var(--color-background)] shadow-md transition-shadow duration-500 hover:shadow-xl"
     >
         {/* Image area */}
         <div className="relative h-52 overflow-hidden bg-[var(--color-surface-alt)] flex items-center justify-center">

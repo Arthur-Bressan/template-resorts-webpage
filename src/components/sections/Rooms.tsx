@@ -16,7 +16,7 @@ function RoomCard({ room }: { room: Room }) {
       data-stagger-child
       data-cursor="card"
       data-cursor-label="Ver detalhes"
-      className="group relative bg-[var(--color-background)] rounded-2xl overflow-hidden shadow-md transition-shadow duration-500 hover:shadow-xl"
+      className="cursor-hover-target group relative bg-[var(--color-background)] rounded-2xl overflow-hidden shadow-md transition-shadow duration-500 hover:shadow-xl"
     >
         {/* Image skeleton — clickable overlay for the image area */}
         <Link
