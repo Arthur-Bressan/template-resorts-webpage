@@ -6,6 +6,8 @@ import { gsap } from "gsap";
 /**
  * 3D perspective tilt + glow spotlight on hover.
  * The ENTIRE card element (border, shadow, content) tilts together.
+ * Exposes tilt values via data-tilt-x / data-tilt-y attributes for
+ * the CustomCursor morph to read without getComputedStyle per frame.
  *
  * Usage:
  *   const tiltRef = useCardTilt<HTMLElement>();
@@ -72,6 +74,10 @@ export function useCardTilt<T extends HTMLElement>() {
         overwrite: "auto",
       });
 
+      // Expose tilt values for cursor morph continuous tracking
+      card.dataset.tiltX = String(rotateX);
+      card.dataset.tiltY = String(rotateY);
+
       glow.style.setProperty("--mx", `${px}%`);
       glow.style.setProperty("--my", `${py}%`);
       glow.style.opacity = "1";
@@ -86,6 +92,19 @@ export function useCardTilt<T extends HTMLElement>() {
         duration: 0.6,
         ease: "elastic.out(1, 0.5)",
         overwrite: "auto",
+        onUpdate: () => {
+          // Keep data attributes in sync during elastic return animation
+          card.dataset.tiltX = String(
+            gsap.getProperty(card, "rotateX") as number
+          );
+          card.dataset.tiltY = String(
+            gsap.getProperty(card, "rotateY") as number
+          );
+        },
+        onComplete: () => {
+          card.dataset.tiltX = "0";
+          card.dataset.tiltY = "0";
+        },
       });
       glow.style.opacity = "0";
     };

@@ -5,6 +5,10 @@ import { gsap } from "gsap";
 
 type CursorType = "default" | "link" | "card" | "input";
 
+const HALO_SIZE = 40;
+const HALO_HALF = HALO_SIZE / 2;
+const MORPH_PAD = 2; // px padding around element border
+
 export function CustomCursor() {
   const dotRef = useRef<HTMLDivElement>(null);
   const haloRef = useRef<HTMLDivElement>(null);
@@ -40,6 +44,10 @@ export function CustomCursor() {
     let cursorType: CursorType = "default";
     let isActive = false;
     let hasMoved = false;
+    let mouseX = 0;
+    let mouseY = 0;
+    let morphTarget: HTMLElement | null = null;
+    let tickerActive = false;
 
     // ── Show / Hide (controls native cursor hiding too) ──
     const show = () => {
@@ -64,13 +72,148 @@ export function CustomCursor() {
       document.documentElement.classList.remove("custom-cursor-active");
     };
 
+    // ── Sync halo to element (used by ticker and scroll/resize) ──
+    const syncHaloToElement = (el: HTMLElement) => {
+      const rect = el.getBoundingClientRect();
+      const hasTilt = el.hasAttribute("data-tilt-x");
+
+      // For 3D-tilted elements: use layout dimensions (offsetWidth) so the halo's
+      // own perspective transform produces the same visual projection.
+      // For non-tilt elements (buttons with scale): use projected bounding rect.
+      const w = (hasTilt ? el.offsetWidth : rect.width) + MORPH_PAD * 2;
+      const h = (hasTilt ? el.offsetHeight : rect.height) + MORPH_PAD * 2;
+
+      if (w <= 0 || h <= 0) return;
+
+      const setProps: gsap.TweenVars = {
+        x: rect.left + rect.width / 2,
+        y: rect.top + rect.height / 2,
+        width: w,
+        height: h,
+        marginLeft: -w / 2,
+        marginTop: -h / 2,
+      };
+
+      // Copy 3D tilt from element to halo for perfect visual alignment
+      if (hasTilt) {
+        setProps.rotateX = parseFloat(el.dataset.tiltX || "0");
+        setProps.rotateY = parseFloat(el.dataset.tiltY || "0");
+        setProps.transformPerspective = 800;
+      }
+
+      gsap.set(halo, setProps);
+    };
+
+    // ── Continuous tracking: runs every frame while morphTarget is active ──
+    const startTracking = () => {
+      if (tickerActive) return;
+      tickerActive = true;
+      gsap.ticker.add(tickerFn);
+    };
+
+    const stopTracking = () => {
+      if (!tickerActive) return;
+      tickerActive = false;
+      gsap.ticker.remove(tickerFn);
+    };
+
+    const tickerFn = () => {
+      if (!morphTarget) return;
+      syncHaloToElement(morphTarget);
+    };
+
+    // ── Morph: ring → element border (entry transition with easing) ──
+    const enterMorph = (target: HTMLElement) => {
+      // Stop any previous tracking (switching between morph targets)
+      stopTracking();
+
+      morphTarget = target;
+      const rect = target.getBoundingClientRect();
+      const br = getComputedStyle(target).borderRadius;
+      const hasTilt = target.hasAttribute("data-tilt-x");
+      const w = (hasTilt ? target.offsetWidth : rect.width) + MORPH_PAD * 2;
+      const h = (hasTilt ? target.offsetHeight : rect.height) + MORPH_PAD * 2;
+
+      const toProps: gsap.TweenVars = {
+        width: w,
+        height: h,
+        marginLeft: -w / 2,
+        marginTop: -h / 2,
+        x: rect.left + rect.width / 2,
+        y: rect.top + rect.height / 2,
+        borderRadius: br,
+        borderWidth: 2,
+        scale: 1,
+        scaleY: 1,
+        scaleX: 1,
+        duration: 0.4,
+        ease: "power3.out",
+        overwrite: "auto",
+        onComplete: () => {
+          // Only start continuous tracking if still morphed to THIS element
+          if (morphTarget === target) startTracking();
+        },
+      };
+
+      // Include 3D tilt in entry animation for smooth transition from circle
+      if (hasTilt) {
+        toProps.rotateX = parseFloat(target.dataset.tiltX || "0");
+        toProps.rotateY = parseFloat(target.dataset.tiltY || "0");
+        toProps.transformPerspective = 800;
+      }
+
+      gsap.to(halo, toProps);
+    };
+
+    // ── Morph: element border → ring (exit transition with easing) ──
+    const leaveMorph = () => {
+      morphTarget = null;
+      // Stop continuous tracking — no more per-frame syncing
+      stopTracking();
+
+      gsap.to(halo, {
+        width: HALO_SIZE,
+        height: HALO_SIZE,
+        marginLeft: -HALO_HALF,
+        marginTop: -HALO_HALF,
+        borderRadius: "50%",
+        borderWidth: 1.5,
+        rotateX: 0,
+        rotateY: 0,
+        scale: 1,
+        duration: 0.35,
+        ease: "power2.out",
+        overwrite: "auto",
+      });
+
+      // Kick halo back toward mouse immediately (don't wait for next mousemove)
+      haloX(mouseX);
+      haloY(mouseY);
+    };
+
+    // ── Update morph position on scroll/resize (backup for ticker gaps) ──
+    const updateMorphPosition = () => {
+      if (!morphTarget) return;
+      syncHaloToElement(morphTarget);
+    };
+
     // ── Cursor Type Transitions ──
-    const setType = (type: CursorType, labelText?: string) => {
+    const setType = (
+      type: CursorType,
+      labelText?: string,
+      morphElement?: HTMLElement
+    ) => {
       if (
         cursorType === type &&
-        (!labelText || !label || label.textContent === labelText)
+        (!labelText || !label || label.textContent === labelText) &&
+        (type !== "card" || morphElement === morphTarget)
       )
         return;
+
+      // Leaving morph: restore halo shape
+      if (cursorType === "card" && type !== "card" && morphTarget) {
+        leaveMorph();
+      }
 
       cursorType = type;
       if (label && labelText) {
@@ -99,21 +242,35 @@ export function CustomCursor() {
             ease: "power2.out",
             overwrite: "auto",
           });
-          if (label) gsap.to(label, { opacity: 0, scale: 0.8, duration: 0.15, overwrite: "auto" });
+          if (label)
+            gsap.to(label, { opacity: 0, scale: 0.8, duration: 0.15, overwrite: "auto" });
           break;
 
         case "card":
-          gsap.to(dot, { scale: 0, opacity: 0, duration: 0.2, overwrite: "auto" });
-          gsap.to(halo, {
-            scale: 2.2,
-            scaleY: 1,
-            borderRadius: "50%",
-            borderWidth: 1,
-            duration: 0.35,
-            ease: "power2.out",
-            overwrite: "auto",
-          });
-          if (label)
+          // Dot: hidden for legacy (no morph), visible when morphing
+          if (morphElement) {
+            gsap.to(dot, {
+              scale: 1,
+              opacity: 1,
+              duration: 0.2,
+              overwrite: "auto",
+            });
+            enterMorph(morphElement);
+          } else {
+            // Legacy: no .cursor-hover-target, just scale halo
+            gsap.to(dot, { scale: 0, opacity: 0, duration: 0.2, overwrite: "auto" });
+            gsap.to(halo, {
+              scale: 2.2,
+              scaleY: 1,
+              borderRadius: "50%",
+              borderWidth: 1,
+              duration: 0.35,
+              ease: "power2.out",
+              overwrite: "auto",
+            });
+          }
+          // Label: show if text provided
+          if (label && labelText)
             gsap.to(label, {
               opacity: 1,
               scale: 0.45,
@@ -122,6 +279,8 @@ export function CustomCursor() {
               ease: "back.out(1.7)",
               overwrite: "auto",
             });
+          else if (label)
+            gsap.to(label, { opacity: 0, scale: 0.8, duration: 0.15, overwrite: "auto" });
           break;
 
         case "input":
@@ -136,7 +295,8 @@ export function CustomCursor() {
             ease: "power2.out",
             overwrite: "auto",
           });
-          if (label) gsap.to(label, { opacity: 0, scale: 0.8, duration: 0.15, overwrite: "auto" });
+          if (label)
+            gsap.to(label, { opacity: 0, scale: 0.8, duration: 0.15, overwrite: "auto" });
           break;
 
         default:
@@ -157,22 +317,28 @@ export function CustomCursor() {
             ease: "power2.out",
             overwrite: "auto",
           });
-          if (label) gsap.to(label, { opacity: 0, scale: 0.8, duration: 0.15, overwrite: "auto" });
+          if (label)
+            gsap.to(label, { opacity: 0, scale: 0.8, duration: 0.15, overwrite: "auto" });
           break;
       }
     };
 
     // ── Mouse Move ──
     const onMouseMove = (e: MouseEvent) => {
-      if (!isActive) show();
-      gsap.set(dot, { x: e.clientX, y: e.clientY });
+      mouseX = e.clientX;
+      mouseY = e.clientY;
 
+      if (!isActive) show();
+      // Dot always follows mouse instantly
+      gsap.set(dot, { x: mouseX, y: mouseY });
+
+      // Halo follows mouse only when NOT morphed to an element
       if (!hasMoved) {
-        gsap.set(halo, { x: e.clientX, y: e.clientY });
+        gsap.set(halo, { x: mouseX, y: mouseY });
         hasMoved = true;
-      } else {
-        haloX(e.clientX);
-        haloY(e.clientY);
+      } else if (!morphTarget) {
+        haloX(mouseX);
+        haloY(mouseY);
       }
     };
 
@@ -180,8 +346,19 @@ export function CustomCursor() {
     const getTypeForElement = (target: HTMLElement): {
       type: CursorType;
       labelText?: string;
+      morphElement?: HTMLElement;
     } => {
-      // 1. Explicit data-cursor on the target itself
+      // 1. .cursor-hover-target — morph ring to element border (highest priority)
+      const morphEl = target.closest<HTMLElement>(".cursor-hover-target");
+      if (morphEl) {
+        return {
+          type: "card",
+          labelText: morphEl.dataset.cursorLabel || undefined,
+          morphElement: morphEl,
+        };
+      }
+
+      // 2. Explicit data-cursor on the target itself
       if (target.dataset.cursor) {
         return {
           type: (target.dataset.cursor as CursorType) || "default",
@@ -191,7 +368,7 @@ export function CustomCursor() {
 
       const tag = target.tagName.toLowerCase();
 
-      // 2. Text inputs
+      // 3. Text inputs
       if (
         tag === "input" ||
         tag === "textarea" ||
@@ -201,7 +378,7 @@ export function CustomCursor() {
         return { type: "input" };
       }
 
-      // 3. Links/buttons without explicit data-cursor
+      // 4. Links/buttons without explicit data-cursor
       if (
         tag === "a" ||
         tag === "button" ||
@@ -211,7 +388,7 @@ export function CustomCursor() {
         return { type: "link" };
       }
 
-      // 4. Inherit from parent data-cursor container
+      // 5. Inherit from parent data-cursor container
       const cursorEl = target.closest<HTMLElement>("[data-cursor]");
       if (cursorEl) {
         return {
@@ -225,10 +402,10 @@ export function CustomCursor() {
 
     // ── Mouseover: check element type ──
     const onMouseOver = (e: MouseEvent) => {
-      const { type, labelText } = getTypeForElement(
+      const { type, labelText, morphElement } = getTypeForElement(
         e.target as HTMLElement
       );
-      setType(type, labelText);
+      setType(type, labelText, morphElement);
     };
 
     // ── Viewport leave ──
@@ -242,6 +419,8 @@ export function CustomCursor() {
     document.addEventListener("mouseover", onMouseOver, true);
     document.addEventListener("mouseleave", onMouseLeaveViewport);
     document.addEventListener("keydown", onKeyDown, { passive: true });
+    window.addEventListener("scroll", updateMorphPosition, { passive: true });
+    window.addEventListener("resize", updateMorphPosition, { passive: true });
 
     // ── Media query change listeners ──
     const onFineChange = (e: MediaQueryListEvent) => {
@@ -258,9 +437,12 @@ export function CustomCursor() {
       document.removeEventListener("mouseover", onMouseOver, true);
       document.removeEventListener("mouseleave", onMouseLeaveViewport);
       document.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("scroll", updateMorphPosition);
+      window.removeEventListener("resize", updateMorphPosition);
       mqFine.removeEventListener("change", onFineChange);
       mqReduced.removeEventListener("change", onReducedChange);
       document.documentElement.classList.remove("custom-cursor-active");
+      stopTracking();
       gsap.killTweensOf([dot, halo, label]);
     };
   }, []);
@@ -289,7 +471,7 @@ export function CustomCursor() {
           transform: "translate(-100px, -100px)",
         }}
       />
-      {/* Outer halo — follows with organic lag */}
+      {/* Outer halo — follows with organic lag; morphs to element border on .cursor-hover-target */}
       <div
         ref={haloRef}
         aria-hidden="true"
@@ -297,10 +479,10 @@ export function CustomCursor() {
           position: "fixed",
           top: 0,
           left: 0,
-          width: 40,
-          height: 40,
-          marginLeft: -20,
-          marginTop: -20,
+          width: HALO_SIZE,
+          height: HALO_SIZE,
+          marginLeft: -HALO_HALF,
+          marginTop: -HALO_HALF,
           borderRadius: "50%",
           border: "1.5px solid white",
           pointerEvents: "none",
