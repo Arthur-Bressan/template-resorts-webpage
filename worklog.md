@@ -475,3 +475,25 @@ Stage Summary:
 - Hero.tsx: 337 lines, fully rewritten with Motion + GSAP hybrid
 - Technologies combined: Motion (stagger, spring gestures, 3D parallax) + GSAP ScrollTrigger (scroll zoom)
 - Files modified: src/components/sections/Hero.tsx, next.config.ts, package.json
+
+---
+Task ID: cursor-morph-3d-fix
+Agent: Main Agent
+Task: Fix cursor morph 3 bugs — parallelogram distortion, ring freeze, z-index
+
+Work Log:
+- Analyzed current CustomCursor.tsx: Bug 2 (single master ticker) and Bug 3 (body render with z-index 2147483647) were already fixed
+- Fixed Bug 1 (parallelogram distortion) — the core remaining issue:
+  - In `enterMorph()`: now reads `data-tilt-x`/`data-tilt-y` attributes, applies `transformOrigin: "center center"`, `transformPerspective: 800`, `rotateX`, `rotateY` matching the card's tilt
+  - Uses `offsetWidth`/`offsetHeight` (untransformed dimensions) instead of `rect.width`/`rect.height` — since the same 3D projection is applied, the visual result matches the card exactly
+  - In ticker tracking mode: reads `data-tilt-x`/`data-tilt-y` each frame via `parseFloat()` (cheap — no getComputedStyle), applies same 3D properties via `gsap.set()`
+  - In `leaveMorph()`: resets `rotateX: 0`, `rotateY: 0` for smooth return to flat circle
+- Verified all 5 section files have `.cursor-hover-target` class (Rooms, Experiences, Gallery, Testimonials, Hero)
+- Clean lint (0 errors), dev server compiles GET / 200
+
+Stage Summary:
+- The halo border now follows the card's 3D tilt rotation frame-by-frame, staying "glued" as a border
+- Same `transformPerspective: 800` and `transformOrigin: "center center"` ensures no shear/parallelogram artifacts
+- Single master ticker loop with `morphing` flag (Bug 2 already fixed)
+- Cursor rendered via `document.body.appendChild` with `z-index: 2147483647` (Bug 3 already fixed)
+- File modified: `src/components/layout/CustomCursor.tsx`

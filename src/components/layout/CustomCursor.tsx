@@ -122,16 +122,22 @@ export function CustomCursor() {
     };
 
     // ── Morph: ring → element border (entry transition with easing) ──
-    // Uses only 2D bounding rect — NO 3D rotation on the halo.
-    // This avoids shear/parallelogram artifacts from perspective mismatch.
+    // Reads tilt data-attributes and applies matching 3D rotation so the halo
+    // stays visually glued to the card border during perspective tilt.
     const enterMorph = (target: HTMLElement) => {
       morphTarget = target;
       morphing = true;
 
       const rect = target.getBoundingClientRect();
       const br = getComputedStyle(target).borderRadius;
-      const w = rect.width + MORPH_PAD * 2;
-      const h = rect.height + MORPH_PAD * 2;
+      // Use offsetWidth/offsetHeight (untransformed dimensions) since we'll
+      // apply the same 3D projection — the visual result will match the card.
+      const w = target.offsetWidth + MORPH_PAD * 2;
+      const h = target.offsetHeight + MORPH_PAD * 2;
+
+      // Read initial tilt values (may be non-zero if mouse entered edge)
+      const tiltX = parseFloat(target.dataset.tiltX || "0");
+      const tiltY = parseFloat(target.dataset.tiltY || "0");
 
       gsap.to(halo, {
         width: w,
@@ -145,6 +151,11 @@ export function CustomCursor() {
         scale: 1,
         scaleX: 1,
         scaleY: 1,
+        // 3D — match the card's perspective tilt exactly
+        transformOrigin: "center center",
+        transformPerspective: 800,
+        rotateX: tiltX,
+        rotateY: tiltY,
         duration: 0.4,
         ease: "power3.out",
         overwrite: "auto",
@@ -170,6 +181,9 @@ export function CustomCursor() {
         borderRadius: "50%",
         borderWidth: 1.5,
         scale: 1,
+        // Reset 3D rotation back to flat
+        rotateX: 0,
+        rotateY: 0,
         duration: 0.35,
         ease: "power2.out",
         overwrite: "auto",
@@ -191,10 +205,17 @@ export function CustomCursor() {
       if (!isActive || morphing) return;
 
       if (morphTarget) {
-        // ── Tracking mode: sync to element's 2D projected bounding box ──
+        // ── Tracking mode: sync to element + 3D tilt rotation ──
+        // Read data-tilt-x/y set by useCardTilt hook (cheap — no getComputedStyle)
+        const tiltX = parseFloat(morphTarget.dataset.tiltX || "0");
+        const tiltY = parseFloat(morphTarget.dataset.tiltY || "0");
+
+        // Position: center of the card's 2D projected bounding box
         const rect = morphTarget.getBoundingClientRect();
-        const w = rect.width + MORPH_PAD * 2;
-        const h = rect.height + MORPH_PAD * 2;
+        // Size: untransformed dimensions (offsetWidth/Height) — the same 3D
+        // rotation applied below will project them to match the card visually
+        const w = morphTarget.offsetWidth + MORPH_PAD * 2;
+        const h = morphTarget.offsetHeight + MORPH_PAD * 2;
         if (w > 0 && h > 0) {
           gsap.set(halo, {
             x: rect.left + rect.width / 2,
@@ -203,6 +224,11 @@ export function CustomCursor() {
             height: h,
             marginLeft: -w / 2,
             marginTop: -h / 2,
+            // 3D: mirror the card's tilt with identical perspective
+            transformOrigin: "center center",
+            transformPerspective: 800,
+            rotateX: tiltX,
+            rotateY: tiltY,
           });
         }
       } else {
