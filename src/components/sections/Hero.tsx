@@ -256,7 +256,7 @@ export function Hero({ siteSettings }: HeroProps) {
               scale: 0.94,
               transition: TAP_SPRING,
             }}
-            className="cursor-hover-target px-8 py-4 rounded-full bg-[var(--color-accent)] text-[var(--color-primary-dark)] font-semibold text-base shadow-lg min-w-[200px] cursor-pointer select-none"
+            className="px-8 py-4 rounded-full bg-[var(--color-accent)] text-[var(--color-primary-dark)] font-semibold text-base shadow-lg min-w-[200px] cursor-pointer select-none"
           >
             <span className="relative z-10 flex items-center justify-center gap-2">
               Reservar Agora
@@ -292,7 +292,7 @@ export function Hero({ siteSettings }: HeroProps) {
               scale: 0.94,
               transition: TAP_SPRING,
             }}
-            className="cursor-hover-target px-8 py-4 rounded-full bg-white/15 backdrop-blur-sm text-white font-medium text-base border border-white/25 min-w-[200px] cursor-pointer select-none"
+            className="px-8 py-4 rounded-full bg-white/15 backdrop-blur-sm text-white font-medium text-base border border-white/25 min-w-[200px] cursor-pointer select-none"
           >
             Conhecer a Pousada
           </motion.button>

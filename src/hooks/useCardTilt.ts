@@ -72,17 +72,11 @@ export function useCardTilt<T extends HTMLElement>() {
         duration: 0.4,
         ease: "power2.out",
         overwrite: "auto",
-        onUpdate: () => {
-          // Expose the CURRENT interpolated tilt values (not the target)
-          // so the cursor morph ring follows the exact same animation physics
-          card.dataset.tiltX = String(
-            gsap.getProperty(card, "rotateX") as number
-          );
-          card.dataset.tiltY = String(
-            gsap.getProperty(card, "rotateY") as number
-          );
-        },
       });
+
+      // Expose tilt values for cursor morph continuous tracking
+      card.dataset.tiltX = String(rotateX);
+      card.dataset.tiltY = String(rotateY);
 
       glow.style.setProperty("--mx", `${px}%`);
       glow.style.setProperty("--my", `${py}%`);

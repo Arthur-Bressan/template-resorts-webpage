@@ -18,7 +18,7 @@ function GalleryItem({ img, idx, onClick }: { img: GalleryImage; idx: number; on
       data-cursor="card"
       data-cursor-label="Abrir"
       aria-label={`Abrir imagem: ${img.alt}`}
-      className={`cursor-hover-target ${img.span} relative rounded-xl overflow-hidden group cursor-pointer focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/50 focus:ring-offset-2 bg-[var(--color-surface-alt)]`}
+      className={`${img.span} relative rounded-xl overflow-hidden group cursor-pointer focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/50 focus:ring-offset-2 bg-[var(--color-surface-alt)]`}
     >
       <div className="w-full h-full flex items-center justify-center">
         {/* Gallery image */}
