@@ -2,7 +2,11 @@
 
 import type { SiteSettings } from "@/lib/data";
 import { Phone, Mail, Calendar, CreditCard } from "lucide-react";
-import Link from "next/link";
+import { motion } from "motion/react";
+
+/* ─── Spring configs (same as Hero CTA buttons) ─── */
+const HOVER_SPRING = { type: "spring" as const, stiffness: 400, damping: 17, mass: 0.8 };
+const TAP_SPRING = { type: "spring" as const, stiffness: 500, damping: 15 };
 
 interface BookingCTAProps {
   siteSettings: SiteSettings;
@@ -45,27 +49,63 @@ export function BookingCTA({ siteSettings }: BookingCTAProps) {
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
-          <Link
+          {/* Primary CTA — Reservar Online (same style as Hero primary) */}
+          <motion.a
             href="/reservas"
-            className="inline-flex items-center gap-2.5 px-6 py-3.5 rounded-full bg-[var(--color-accent)] text-[var(--color-primary-dark)] font-semibold hover:bg-[var(--color-accent)]/90 transition-colors shadow-lg min-w-[200px] justify-center"
+            whileHover={{
+              scale: 1.06,
+              y: -3,
+              boxShadow: "0 20px 50px -12px rgba(217, 164, 65, 0.45)",
+              transition: HOVER_SPRING,
+            }}
+            whileTap={{
+              scale: 0.94,
+              transition: TAP_SPRING,
+            }}
+            className="inline-flex items-center gap-2.5 px-6 py-3.5 rounded-full bg-[var(--color-accent)] text-[var(--color-primary-dark)] font-semibold shadow-lg min-w-[200px] justify-center cursor-pointer select-none"
           >
             <CreditCard className="w-4 h-4" />
             Reservar Online
-          </Link>
-          <a
+          </motion.a>
+
+          {/* Secondary CTA — Ligar Agora (white bg, dark text) */}
+          <motion.a
             href={`tel:${siteSettings.phone}`}
-            className="inline-flex items-center gap-2.5 px-6 py-3.5 rounded-full bg-white text-[var(--color-text)] font-semibold hover:bg-white/90 transition-colors shadow-lg min-w-[200px] justify-center"
+            whileHover={{
+              scale: 1.06,
+              y: -3,
+              boxShadow: "0 20px 50px -12px rgba(0, 0, 0, 0.25)",
+              transition: HOVER_SPRING,
+            }}
+            whileTap={{
+              scale: 0.94,
+              transition: TAP_SPRING,
+            }}
+            className="inline-flex items-center gap-2.5 px-6 py-3.5 rounded-full bg-white text-[var(--color-text)] font-semibold shadow-lg min-w-[200px] justify-center cursor-pointer select-none"
           >
             <Phone className="w-4 h-4" />
             Ligar Agora
-          </a>
-          <a
+          </motion.a>
+
+          {/* Tertiary CTA — Enviar E-mail (glass/transparent bg) */}
+          <motion.a
             href={`mailto:${siteSettings.email}?subject=Reserva`}
-            className="inline-flex items-center gap-2.5 px-6 py-3.5 rounded-full bg-white/15 text-white font-semibold hover:bg-white/25 transition-colors border border-white/20 min-w-[200px] justify-center"
+            whileHover={{
+              scale: 1.06,
+              y: -3,
+              backgroundColor: "rgba(255,255,255,0.25)",
+              borderColor: "rgba(255,255,255,0.4)",
+              transition: HOVER_SPRING,
+            }}
+            whileTap={{
+              scale: 0.94,
+              transition: TAP_SPRING,
+            }}
+            className="inline-flex items-center gap-2.5 px-6 py-3.5 rounded-full bg-white/15 text-white font-semibold border border-white/20 min-w-[200px] justify-center cursor-pointer select-none"
           >
             <Mail className="w-4 h-4" />
             Enviar E-mail
-          </a>
+          </motion.a>
         </div>
 
         <p className="text-sm text-white/50">
