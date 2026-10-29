@@ -2,9 +2,68 @@
 
 import type { SiteSettings, Stat } from "@/lib/data";
 import { Leaf, Mail, Phone, MapPin } from "lucide-react";
-import { useState, type FormEvent } from "react";
+import { gsap } from "@/components/layout/SmoothScrollProvider";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 
 interface FooterProps { siteSettings: SiteSettings; stats: Stat[]; }
+
+function CountUpNumber({ target, suffix }: { target: number; suffix: string }) {
+  const numberRef = useRef<HTMLSpanElement>(null);
+  const value = Number.isFinite(target) ? Math.round(target) : 0;
+  const finalText = `${value.toLocaleString("pt-BR")}${suffix}`;
+
+  useEffect(() => {
+    const element = numberRef.current;
+    if (!element) return;
+
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    let tween: gsap.core.Tween | undefined;
+    const showFinalValue = () => { element.textContent = finalText; };
+    const stopTween = () => {
+      if (!tween) return;
+      tween.scrollTrigger?.kill();
+      tween.kill();
+      tween = undefined;
+    };
+    const handleMotionPreference = (event: MediaQueryListEvent) => {
+      if (event.matches) {
+        stopTween();
+        showFinalValue();
+      }
+    };
+
+    if (reducedMotion.matches) {
+      showFinalValue();
+      return;
+    }
+
+    const counter = { value: 0 };
+    element.textContent = `0${suffix}`;
+    tween = gsap.to(counter, {
+      value,
+      duration: 2,
+      ease: "power2.out",
+      scrollTrigger: { trigger: element, start: "top 80%", once: true },
+      onUpdate: () => {
+        element.textContent = `${Math.round(counter.value).toLocaleString("pt-BR")}${suffix}`;
+      },
+      onComplete: showFinalValue,
+    });
+    reducedMotion.addEventListener("change", handleMotionPreference);
+
+    return () => {
+      reducedMotion.removeEventListener("change", handleMotionPreference);
+      stopTween();
+    };
+  }, [finalText, suffix, value]);
+
+  return (
+    <>
+      <span ref={numberRef} aria-hidden="true" className="font-serif text-4xl text-[var(--color-secondary-light)]">{finalText}</span>
+      <span className="sr-only">{finalText}</span>
+    </>
+  );
+}
 
 export function Footer({ siteSettings, stats }: FooterProps) {
   const [sending, setSending] = useState(false);
@@ -38,7 +97,7 @@ export function Footer({ siteSettings, stats }: FooterProps) {
       {stats.length > 0 && <div className="border-b border-white/15">
         <div className="mx-auto grid max-w-7xl grid-cols-2 gap-8 px-4 py-10 sm:px-6 md:grid-cols-4 lg:px-8">
           {stats.map((stat) => <div key={stat.id} className="text-center">
-            <span className="font-serif text-4xl text-[var(--color-secondary-light)]">{stat.value.toLocaleString("pt-BR")}{stat.suffix}</span>
+            <CountUpNumber target={stat.value} suffix={stat.suffix} />
             <p className="mt-2 text-sm text-white/80">{stat.label}</p>
           </div>)}
         </div>
