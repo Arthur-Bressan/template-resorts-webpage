@@ -3,7 +3,6 @@
 import type { SiteSettings, Stat } from "@/lib/data";
 import { Leaf, Mail, Phone, MapPin } from "lucide-react";
 import { gsap } from "@/components/layout/SmoothScrollProvider";
-import { GreenSparkles } from "@/components/ui/GreenSparkles";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 
 interface FooterProps { siteSettings: SiteSettings; stats: Stat[]; }
@@ -95,9 +94,8 @@ export function Footer({ siteSettings, stats }: FooterProps) {
 
   return (
     <footer className="bg-[var(--color-primary-dark)] text-[var(--color-background)]">
-      {stats.length > 0 && <div className="relative isolate overflow-hidden border-b border-white/15">
-        <GreenSparkles />
-        <div className="relative z-10 mx-auto grid max-w-7xl grid-cols-2 gap-8 px-4 py-10 sm:px-6 md:grid-cols-4 lg:px-8">
+      {stats.length > 0 && <div className="border-b border-white/15">
+        <div className="mx-auto grid max-w-7xl grid-cols-2 gap-8 px-4 py-10 sm:px-6 md:grid-cols-4 lg:px-8">
           {stats.map((stat) => <div key={stat.id} className="text-center">
             <CountUpNumber target={stat.value} suffix={stat.suffix} />
             <p className="mt-2 text-sm text-white/80">{stat.label}</p>

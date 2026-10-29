@@ -4,7 +4,6 @@ import Image from "next/image";
 import { useState, type ComponentType } from "react";
 import type { Room, SiteSettings } from "@/lib/data";
 import Link from "next/link";
-import { GreenSparkles } from "@/components/ui/GreenSparkles";
 import { ArrowLeft, Users, Maximize2, BedDouble, Wifi, TreePine, Mountain, Flame, Dog, Flower2, Wine, CheckCircle2, Phone, Calendar, Mail } from "lucide-react";
 
 const iconMap: Record<string, ComponentType<{ className?: string }>> = {
@@ -40,15 +39,14 @@ export default function RoomDetailPage({ room, allRooms, siteSettings }: RoomDet
   const others = allRooms.filter((other) => other.slug !== room.slug).slice(0, 3);
   return (
     <>
-      <section className="relative isolate overflow-hidden bg-[var(--color-primary-dark)] pt-32 pb-14">
-        <GreenSparkles />
-        <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <section className="bg-[var(--color-primary-dark)] pt-32 pb-14">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <nav aria-label="Caminho da página" className="mb-6"><Link href="/#rooms" className="inline-flex min-h-11 items-center gap-2 text-sm text-white/90 underline underline-offset-4 hover:text-white"><ArrowLeft className="h-4 w-4" aria-hidden="true" />Acomodações</Link></nav>
-          <h1 className="max-w-4xl font-serif text-[clamp(2.75rem,6vw,5rem)] leading-[1.05] tracking-[-0.025em] text-white">{room.name}</h1>
-          <div className="mt-6 flex flex-wrap gap-x-7 gap-y-3 text-base text-[var(--color-surface)] sm:text-lg">
-            <span className="flex items-center gap-2"><Users className="h-4 w-4 text-[var(--color-accent)]" aria-hidden="true" />Até {room.capacity} hóspedes</span>
-            <span className="flex items-center gap-2"><Maximize2 className="h-4 w-4 text-[var(--color-accent)]" aria-hidden="true" />{room.size} m²</span>
-            {room.bedType && <span className="flex items-center gap-2"><BedDouble className="h-4 w-4 text-[var(--color-accent)]" aria-hidden="true" />{room.bedType}</span>}
+          <h1 className="max-w-3xl font-serif text-4xl leading-tight text-white md:text-5xl">{room.name}</h1>
+          <div className="mt-5 flex flex-wrap gap-x-6 gap-y-3 text-white/90">
+            <span className="flex items-center gap-2"><Users className="h-4 w-4" aria-hidden="true" />Até {room.capacity} hóspedes</span>
+            <span className="flex items-center gap-2"><Maximize2 className="h-4 w-4" aria-hidden="true" />{room.size} m²</span>
+            {room.bedType && <span className="flex items-center gap-2"><BedDouble className="h-4 w-4" aria-hidden="true" />{room.bedType}</span>}
           </div>
         </div>
       </section>
@@ -71,12 +69,11 @@ export default function RoomDetailPage({ room, allRooms, siteSettings }: RoomDet
           <p className="max-w-3xl whitespace-pre-line text-base leading-relaxed">{room.policy || "Confirme as condições, horários de entrada e saída e regras de cancelamento com a equipe antes de reservar."}</p>
         </div>
       </section>
-      <section className="relative isolate overflow-hidden bg-[var(--color-primary-dark)] py-20">
-        <GreenSparkles />
-        <div className="relative z-10 mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
-          <h2 className="mb-5 font-serif text-4xl leading-tight text-white sm:text-5xl">Reserve <span className="text-[var(--color-secondary-light)]">{room.name}</span></h2>
-          <p className="mb-3 font-serif text-[clamp(2.5rem,5vw,4rem)] leading-tight text-[var(--color-accent)]">{room.price.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}<span className="ml-2 font-sans text-base text-[var(--color-surface)]">/ noite</span></p>
-          <p className="mb-8 text-lg text-[var(--color-surface)]">Consulte as datas e o valor total da estadia antes de concluir a reserva.</p>
+      <section className="bg-[var(--color-primary-dark)] py-20">
+        <div className="mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
+          <h2 className="mb-5 font-serif text-white">Reserve {room.name}</h2>
+          <p className="mb-3 font-serif text-4xl text-white">{room.price.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}<span className="ml-2 font-sans text-base text-white/85">/ noite</span></p>
+          <p className="mb-8 text-base text-white/85">Consulte as datas e o valor total da estadia antes de concluir a reserva.</p>
           <div className="flex flex-col items-stretch justify-center gap-4 sm:flex-row sm:flex-wrap">
             <Link href={`/reservas?room=${encodeURIComponent(room.slug)}`} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-[var(--color-accent)] px-7 py-3.5 font-semibold text-[var(--color-primary-dark)] hover:bg-[var(--color-secondary-light)]"><Calendar className="h-4 w-4" aria-hidden="true" />Reservar agora</Link>
             {siteSettings.phone && <a href={`tel:${siteSettings.phone.replace(/[^+\d]/g, "")}`} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-white/40 px-7 py-3.5 font-semibold text-white hover:bg-white/10 hover:text-white"><Phone className="h-4 w-4" aria-hidden="true" />Tirar dúvidas por telefone</a>}

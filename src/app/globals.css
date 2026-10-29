@@ -169,61 +169,6 @@
     padding-bottom: var(--section-padding);
   }
 
-  .green-sparkles {
-    position: absolute;
-    z-index: 0;
-    inset: 0;
-    overflow: hidden;
-    pointer-events: none;
-  }
-  .green-sparkles::before,
-  .green-sparkles::after {
-    content: "";
-    position: absolute;
-    z-index: 0;
-    inset: 0;
-  }
-  .green-sparkles::before {
-    background-image:
-      radial-gradient(circle, rgba(255, 246, 225, 0.55) 0.8px, transparent 1.5px),
-      radial-gradient(circle, rgba(217, 164, 65, 0.45) 1px, transparent 1.8px);
-    background-position: 0 0, 21px 13px;
-    background-size: 48px 48px, 86px 86px;
-    opacity: 0.26;
-    mask-image: radial-gradient(ellipse at center, #000 12%, transparent 82%);
-  }
-  .green-sparkles::after {
-    inset: -15%;
-    background:
-      radial-gradient(ellipse at 78% 28%, rgba(217, 164, 65, 0.18), transparent 28%),
-      radial-gradient(ellipse at 15% 82%, rgba(217, 168, 118, 0.14), transparent 30%);
-    filter: blur(24px);
-  }
-  .green-sparkles > span {
-    position: absolute;
-    z-index: 1;
-    width: 3px;
-    height: 3px;
-    border-radius: 999px;
-    background: #fff5df;
-    box-shadow: 0 0 7px 2px rgba(255, 245, 223, 0.5), 0 0 18px 4px rgba(217, 164, 65, 0.3);
-    opacity: 0.58;
-    animation: green-sparkle-twinkle 4.6s ease-in-out infinite;
-  }
-  .green-sparkles > span:nth-child(1) { left: 8%; top: 25%; animation-delay: -1.1s; }
-  .green-sparkles > span:nth-child(2) { left: 21%; top: 72%; animation-delay: -2.8s; animation-duration: 5.3s; }
-  .green-sparkles > span:nth-child(3) { left: 38%; top: 18%; animation-delay: -3.7s; animation-duration: 4.1s; }
-  .green-sparkles > span:nth-child(4) { left: 57%; top: 82%; animation-delay: -0.8s; animation-duration: 5.5s; }
-  .green-sparkles > span:nth-child(5) { left: 72%; top: 38%; animation-delay: -2.1s; animation-duration: 3.9s; }
-  .green-sparkles > span:nth-child(6) { left: 88%; top: 67%; animation-delay: -3.3s; animation-duration: 5.1s; }
-  .green-sparkles > span:nth-child(7) { left: 94%; top: 15%; animation-delay: -1.8s; animation-duration: 4.3s; }
-  .green-sparkles > span:nth-child(8) { left: 46%; top: 51%; animation-delay: -4.2s; animation-duration: 5.7s; }
-
-  @keyframes green-sparkle-twinkle {
-    0%, 100% { opacity: 0.24; transform: scale(0.72); }
-    50% { opacity: 0.95; transform: scale(1.35); }
-  }
-
   /* Text mask — GSAP will animate the inner span */
   .text-mask-line {
     overflow: hidden;
@@ -232,12 +177,5 @@
   .text-mask-line > span {
     display: block;
     /* GSAP sets yPercent: 0 on enter — no CSS opacity hack */
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .green-sparkles > span {
-    animation: none;
-    opacity: 0.58;
   }
 }

@@ -5,7 +5,6 @@ import type { ComponentType } from "react";
 import type { SiteSettings, AboutAmenity, Distance, Direction, SensoryConfig } from "@/lib/data";
 import { BookingCTA } from "@/components/sections/BookingCTA";
 import { Location } from "@/components/sections/Location";
-import { GreenSparkles } from "@/components/ui/GreenSparkles";
 import { ChevronRight, Coffee, Wifi, Car, TreePine, Waves, Dog, Flame, Wine, Shield, Baby, Recycle, Flower2, Bus, Plane } from "lucide-react";
 
 const iconMap: Record<string, ComponentType<{ className?: string }>> = {
@@ -43,19 +42,17 @@ export default function SobrePage({ siteSettings, amenities, distances, directio
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema).replace(/</g, "\\u003c") }} />
-      <section className="relative isolate overflow-hidden bg-[var(--color-primary-dark)] pt-32 pb-16">
-        <GreenSparkles />
-        <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <section className="bg-[var(--color-primary-dark)] pt-32 pb-16">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <nav aria-label="Caminho da página" className="mb-6">
-            <ol className="flex flex-wrap items-center gap-2 text-sm text-[var(--color-surface)]">
+            <ol className="flex flex-wrap items-center gap-2 text-sm text-white/80">
               <li><a href="/" className="text-white hover:text-white underline underline-offset-4">Início</a></li>
               <li><ChevronRight className="h-4 w-4" aria-hidden="true" /></li>
               <li aria-current="page">Sobre a pousada</li>
             </ol>
           </nav>
-          <p className="mb-4 text-xs font-bold uppercase tracking-[0.22em] text-[var(--color-accent)] sm:text-sm">Um refúgio para desacelerar</p>
-          <h1 className="max-w-4xl font-serif text-[clamp(3rem,6.2vw,5.25rem)] leading-[1.04] tracking-[-0.03em] text-[var(--color-surface)]">{siteSettings.name}</h1>
-          <p className="mt-6 max-w-2xl text-lg text-[var(--color-secondary-light)] sm:text-xl">Conheça os espaços, as comodidades e as orientações para planejar sua estadia.</p>
+          <h1 className="max-w-3xl font-serif text-4xl leading-tight text-white md:text-5xl">{siteSettings.name}</h1>
+          <p className="mt-5 max-w-2xl text-lg text-white/85">Conheça os espaços, as comodidades e as orientações para planejar sua estadia.</p>
         </div>
       </section>
       <section className="section-padding">
