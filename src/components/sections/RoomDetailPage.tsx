@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useState, type ComponentType } from "react";
 import type { Room, SiteSettings } from "@/lib/data";
 import Link from "next/link";
-import { ArrowLeft, Users, Maximize2, BedDouble, Wifi, TreePine, Mountain, Flame, Dog, Flower2, Wine, CheckCircle2, Phone, Calendar, Mail } from "lucide-react";
+import { ArrowLeft, ChevronRight, Users, Maximize2, BedDouble, Wifi, TreePine, Mountain, Flame, Dog, Flower2, Wine, CheckCircle2, Phone, Calendar, Mail } from "lucide-react";
 
 const iconMap: Record<string, ComponentType<{ className?: string }>> = {
   BedDouble, Wifi, TreePine, Mountain, Flame, Dog, Flower2, Wine, Trees: TreePine,
@@ -39,14 +39,33 @@ export default function RoomDetailPage({ room, allRooms, siteSettings }: RoomDet
   const others = allRooms.filter((other) => other.slug !== room.slug).slice(0, 3);
   return (
     <>
-      <section className="bg-[var(--color-primary-dark)] pt-32 pb-14">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <nav aria-label="Caminho da página" className="mb-6"><Link href="/#rooms" className="inline-flex min-h-11 items-center gap-2 text-sm text-white/90 underline underline-offset-4 hover:text-white"><ArrowLeft className="h-4 w-4" aria-hidden="true" />Acomodações</Link></nav>
-          <h1 className="max-w-3xl font-serif text-4xl leading-tight text-white md:text-5xl">{room.name}</h1>
-          <div className="mt-5 flex flex-wrap gap-x-6 gap-y-3 text-white/90">
-            <span className="flex items-center gap-2"><Users className="h-4 w-4" aria-hidden="true" />Até {room.capacity} hóspedes</span>
-            <span className="flex items-center gap-2"><Maximize2 className="h-4 w-4" aria-hidden="true" />{room.size} m²</span>
-            {room.bedType && <span className="flex items-center gap-2"><BedDouble className="h-4 w-4" aria-hidden="true" />{room.bedType}</span>}
+      <section className="relative isolate overflow-hidden bg-[var(--color-primary-dark)] pt-28 pb-16 sm:pt-32 sm:pb-20">
+        <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-br from-[#3F5A48] via-[#29392F] to-[#2E2A22]" />
+        <div aria-hidden="true" className="absolute inset-0 opacity-[0.04]">
+          <svg className="h-full w-full" xmlns="http://www.w3.org/2000/svg">
+            <defs><pattern id="room-detail-grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 L 0 0 0 40" fill="none" stroke="white" strokeWidth="0.5" /></pattern></defs>
+            <rect width="100%" height="100%" fill="url(#room-detail-grid)" />
+          </svg>
+        </div>
+        <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+        <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <nav aria-label="Breadcrumb" className="mb-6">
+            <ol className="flex flex-wrap items-center gap-2 text-sm text-white/60">
+              <li><Link href="/" className="hover:text-white">Início</Link></li>
+              <li><ChevronRight aria-hidden="true" className="h-3.5 w-3.5" /></li>
+              <li><Link href="/#rooms" className="hover:text-white">Acomodações</Link></li>
+              <li><ChevronRight aria-hidden="true" className="h-3.5 w-3.5" /></li>
+              <li aria-current="page" className="text-white/90">{room.name}</li>
+            </ol>
+          </nav>
+          <Link href="/#rooms" className="mb-5 inline-flex min-h-8 items-center gap-2 text-sm text-white/70 hover:text-white">
+            <ArrowLeft aria-hidden="true" className="h-4 w-4" />Voltar para acomodações
+          </Link>
+          <h1 className="max-w-3xl font-serif text-4xl leading-tight text-white md:text-5xl lg:text-6xl">{room.name}</h1>
+          <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-3 text-white/75">
+            <span className="flex items-center gap-1.5"><Users className="h-4 w-4" aria-hidden="true" />{room.capacity} hóspedes</span>
+            <span className="flex items-center gap-1.5"><Maximize2 className="h-4 w-4" aria-hidden="true" />{room.size}m²</span>
+            {room.bedType && <span className="flex items-center gap-1.5"><BedDouble className="h-4 w-4" aria-hidden="true" />{room.bedType}</span>}
           </div>
         </div>
       </section>
