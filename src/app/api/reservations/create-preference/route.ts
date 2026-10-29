@@ -1,160 +1,110 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { rateLimit, getClientIp } from '@/lib/rate-limit'
-
-async function createMercadoPagoPreference(data: Record<string, unknown>) {
-  const MP_ACCESS_TOKEN = process.env.MERCADO_PAGO_ACCESS_TOKEN
-  if (!MP_ACCESS_TOKEN) return null
-
-  const response = await fetch('https://api.mercadopago.com/checkout/preferences', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${MP_ACCESS_TOKEN}`,
-      'X-Idempotency-Key': crypto.randomUUID(),
-    },
-    body: JSON.stringify(data),
-  })
-  if (!response.ok) {
-    const text = await response.text()
-    throw new Error(`Mercado Pago API error ${response.status}: ${text}`)
-  }
-  return response.json()
-}
+import { DAY_MS, HOLD_MS, ReservationError, hasConflict, lockRoom, parseDate, statusToken, todayAtProperty } from '../_shared'
 
 export async function POST(request: NextRequest) {
   try {
-    // 1. Honeypot check — silent 200 if filled
-    const body = await request.json()
-    if (body.website) {
-      return NextResponse.json({ ok: true })
+    const { success } = rateLimit(`reservation:${getClientIp(request)}`, 3, 60_000)
+    if (!success) return NextResponse.json({ error: 'Muitas tentativas. Aguarde um minuto e tente novamente.' }, { status: 429 })
+    const body = await request.json().catch(() => null)
+    if (!body || typeof body !== 'object' || Array.isArray(body)) throw new ReservationError('Dados da reserva inválidos.')
+    if (body.website) throw new ReservationError('Não foi possível enviar a reserva.')
+    const { roomId, checkIn, checkOut, guests, consent } = body
+    const guestName = typeof body.guestName === 'string' ? body.guestName.trim() : ''
+    const guestEmail = typeof body.guestEmail === 'string' ? body.guestEmail.trim().toLowerCase() : ''
+    const guestPhone = typeof body.guestPhone === 'string' ? body.guestPhone.trim() : ''
+    if (typeof roomId !== 'string' || !roomId || roomId.length > 100 || !guestName || guestName.length > 150 ||
+        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestEmail) || guestEmail.length > 254 ||
+        !/^[+\d\s().-]{8,30}$/.test(guestPhone) || guestPhone.replace(/\D/g, '').length < 8) {
+      throw new ReservationError('Confira o quarto, nome, e-mail e telefone informados.')
     }
+    if (consent !== true) throw new ReservationError('Você precisa aceitar a Política de Privacidade.')
+    if (!Number.isInteger(guests) || guests < 1) throw new ReservationError('Número de hóspedes inválido.')
+    const checkInDate = parseDate(checkIn)
+    const checkOutDate = parseDate(checkOut)
+    if (!checkInDate || !checkOutDate) throw new ReservationError('Informe datas válidas.')
+    if (checkIn < todayAtProperty()) throw new ReservationError('O check-in não pode ser no passado.')
+    if (checkOutDate <= checkInDate) throw new ReservationError('O check-out deve ser pelo menos um dia após o check-in.')
+    const nights = (checkOutDate.getTime() - checkInDate.getTime()) / DAY_MS
+    if (nights > 365) throw new ReservationError('Para estadias acima de 365 noites, entre em contato com a pousada.')
 
-    // 2. Rate limit: 3 req/min per IP
-    const ip = getClientIp(request)
-    const { success } = rateLimit(ip, 3, 60_000)
-    if (!success) {
-      return NextResponse.json(
-        { error: 'Muitas tentativas. Aguarde um momento e tente novamente.' },
-        { status: 429 }
-      )
+    // Never create a mock or pending reservation without payment credentials.
+    const accessToken = process.env.MERCADO_PAGO_ACCESS_TOKEN
+    if (!accessToken) throw new ReservationError('O pagamento online está temporariamente indisponível. Tente novamente mais tarde ou entre em contato.', 503)
+    let baseUrl: URL
+    try { baseUrl = new URL(process.env.NEXT_PUBLIC_BASE_URL || '') }
+    catch { throw new ReservationError('O pagamento online está temporariamente indisponível.', 503) }
+    if (!['http:', 'https:'].includes(baseUrl.protocol) || baseUrl.username || baseUrl.password ||
+        (process.env.NODE_ENV === 'production' && baseUrl.protocol !== 'https:')) {
+      throw new ReservationError('O pagamento online está temporariamente indisponível.', 503)
     }
-
-    // 3. Validate inputs
-    const { roomId, checkIn, checkOut, guestName, guestEmail, guestPhone, guests, consent } = body
-
-    if (!roomId || !checkIn || !checkOut || !guestName || !guestEmail || !guestPhone || !guests) {
-      return NextResponse.json({ error: 'Todos os campos são obrigatórios.' }, { status: 400 })
-    }
-
-    if (!consent) {
-      return NextResponse.json({ error: 'Você precisa aceitar a Política de Privacidade.' }, { status: 400 })
-    }
-
-    if (guests < 1 || guests > 10) {
-      return NextResponse.json({ error: 'Número de hóspedes inválido.' }, { status: 400 })
-    }
-
-    const checkInDate = new Date(checkIn)
-    const checkOutDate = new Date(checkOut)
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-
-    if (isNaN(checkInDate.getTime()) || isNaN(checkOutDate.getTime())) {
-      return NextResponse.json({ error: 'Datas inválidas.' }, { status: 400 })
-    }
-
-    if (checkInDate < today) {
-      return NextResponse.json({ error: 'A data de check-in não pode ser no passado.' }, { status: 400 })
-    }
-
-    if (checkOutDate <= checkInDate) {
-      return NextResponse.json({ error: 'O check-out deve ser após o check-in.' }, { status: 400 })
-    }
-
-    // 4. Check room exists and is published
-    const room = await db.room.findUnique({ where: { id: roomId } })
-    if (!room || !room.published) {
-      return NextResponse.json({ error: 'Quarto não encontrado ou indisponível.' }, { status: 400 })
-    }
-
-    // 5. Calculate total
-    const diffMs = checkOutDate.getTime() - checkInDate.getTime()
-    const nights = Math.ceil(diffMs / (1000 * 60 * 60 * 24))
-    if (nights < 1) {
-      return NextResponse.json({ error: 'A reserva deve ter pelo menos 1 noite.' }, { status: 400 })
-    }
-    const totalPrice = room.price * nights
-
-    // 6. Create pending reservation
-    const reservation = await db.reservation.create({
-      data: {
-        guestName,
-        guestEmail,
-        guestPhone,
-        roomId: room.id,
-        checkIn: checkInDate,
-        checkOut: checkOutDate,
-        guests: Number(guests),
-        totalPrice,
-        status: 'pending',
-      },
+    const expiresAt = new Date(Date.now() + HOLD_MS)
+    const { reservation, room } = await db.$transaction(async (tx) => {
+      await lockRoom(tx, roomId)
+      const room = await tx.room.findUnique({ where: { id: roomId } })
+      if (!room?.published || room.capacity < 1 || !Number.isFinite(room.price) || Math.round(room.price * 100) <= 0) {
+        throw new ReservationError('Quarto não encontrado ou indisponível.', 409)
+      }
+      if (guests > room.capacity) throw new ReservationError(`Este quarto acomoda até ${room.capacity} hóspedes.`)
+      if (await hasConflict(tx, roomId, checkInDate, checkOutDate)) {
+        throw new ReservationError('Este quarto já está reservado ou em pagamento nessas datas. Escolha outro período ou acomodação.', 409)
+      }
+      const reservation = await tx.reservation.create({ data: {
+        guestName, guestEmail, guestPhone, roomId, checkIn: checkInDate, checkOut: checkOutDate,
+        guests, totalPrice: Math.round(room.price * 100) * nights / 100,
+        status: 'pending', mercadoPagoStatus: 'checkout_creating',
+        notes: JSON.stringify({ checkout: { expiresAt: expiresAt.toISOString() } }),
+      } })
+      return { reservation, room }
     })
 
-    // 7. Create Mercado Pago preference (or mock)
-    const preferenceData = {
-      external_reference: reservation.id,
-      items: [{
-        title: `Reserva: ${room.name}`,
-        quantity: nights,
-        unit_price: room.price,
-        currency_id: 'BRL',
-      }],
-      payer: {
-        name: guestName,
-        email: guestEmail,
-        phone: { number: guestPhone },
-      },
-      back_urls: {
-        success: `${process.env.NEXT_PUBLIC_BASE_URL || ''}/reservas/sucesso`,
-        failure: `${process.env.NEXT_PUBLIC_BASE_URL || ''}/reservas/falha`,
-        pending: `${process.env.NEXT_PUBLIC_BASE_URL || ''}/reservas/pendente`,
-      },
-      auto_return: 'approved',
+    const token = statusToken(reservation.id)
+    const returnUrl = (path: string) => {
+      const url = new URL(path, baseUrl.origin)
+      url.searchParams.set('reservationId', reservation.id)
+      url.searchParams.set('token', token)
+      return url.toString()
     }
-
-    const mpResult = await createMercadoPagoPreference(preferenceData)
-
-    if (mpResult) {
-      // Real Mercado Pago — update reservation with preference ID
-      await db.reservation.update({
-        where: { id: reservation.id },
-        data: { mercadoPagoPaymentId: mpResult.id },
+    try {
+      const response = await fetch('https://api.mercadopago.com/checkout/preferences', {
+        method: 'POST', cache: 'no-store', signal: AbortSignal.timeout(15_000),
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}`, 'X-Idempotency-Key': reservation.id },
+        body: JSON.stringify({
+          external_reference: reservation.id, metadata: { reservation_id: reservation.id },
+          items: [{ title: `Reserva: ${room.name}`, quantity: nights, unit_price: Math.round(room.price * 100) / 100, currency_id: 'BRL' }],
+          payer: { name: guestName, email: guestEmail, phone: { number: guestPhone } },
+          back_urls: { success: returnUrl('/reservas/sucesso'), failure: returnUrl('/reservas/falha'), pending: returnUrl('/reservas/pendente') },
+          notification_url: new URL('/api/reservations/webhook', baseUrl.origin).toString(),
+          auto_return: 'approved', expires: true,
+          expiration_date_from: new Date().toISOString(), expiration_date_to: expiresAt.toISOString(),
+        }),
       })
-      return NextResponse.json({
-        init_point: mpResult.init_point,
-        sandbox_init_point: mpResult.sandbox_init_point,
-        reservationId: reservation.id,
-      })
+      if (!response.ok) {
+        // A definite rejection cannot produce a payable checkout.
+        if (response.status >= 400 && response.status < 500) {
+          await db.reservation.updateMany({ where: { id: reservation.id, mercadoPagoStatus: 'checkout_creating' }, data: { status: 'cancelled', mercadoPagoStatus: 'checkout_failed' } })
+        }
+        throw new Error(`Preference response ${response.status}`)
+      }
+      const preference = await response.json()
+      const checkoutUrl = new URL(preference.init_point)
+      if (typeof preference.id !== 'string' || checkoutUrl.protocol !== 'https:' ||
+          !/(^|\.)mercadopago\.com(?:\.br)?$/.test(checkoutUrl.hostname)) throw new Error('Invalid checkout response')
+      await db.reservation.updateMany({ where: { id: reservation.id, mercadoPagoStatus: 'checkout_creating' }, data: {
+        mercadoPagoPaymentId: preference.id, mercadoPagoStatus: 'checkout_created',
+        notes: JSON.stringify({ checkout: { expiresAt: expiresAt.toISOString(), preferenceId: preference.id } }),
+      } })
+      return NextResponse.json({ init_point: checkoutUrl.toString(), reservationId: reservation.id, statusToken: token })
+    } catch {
+      // A timeout may have created a real preference. Retain its hold until expiry.
+      await db.reservation.updateMany({ where: { id: reservation.id, mercadoPagoStatus: 'checkout_creating' }, data: { mercadoPagoStatus: 'checkout_uncertain' } })
+      return NextResponse.json({ error: 'Não foi possível abrir o pagamento. Por segurança, o quarto pode ficar reservado por até 30 minutos. Consulte o andamento antes de tentar novamente.',
+        statusUrl: returnUrl('/reservas/pendente') }, { status: 503 })
     }
-
-    // Mock mode (no MP token)
-    await db.reservation.update({
-      where: { id: reservation.id },
-      data: { mercadoPagoPaymentId: `mock_${reservation.id}` },
-    })
-
-    return NextResponse.json({
-      init_point: '/reservas/pendente?reservationId=' + reservation.id,
-      sandbox_init_point: '/reservas/pendente?reservationId=' + reservation.id,
-      reservationId: reservation.id,
-      mock: true,
-    })
   } catch (error) {
-    console.error('Create preference error:', error)
-    return NextResponse.json(
-      { error: 'Erro ao processar sua reserva. Tente novamente.' },
-      { status: 500 }
-    )
+    if (error instanceof ReservationError) return NextResponse.json({ error: error.message }, { status: error.status })
+    console.error('Reservation checkout unavailable')
+    return NextResponse.json({ error: 'Não foi possível consultar a disponibilidade. Aguarde um momento e tente novamente.' }, { status: 503 })
   }
 }

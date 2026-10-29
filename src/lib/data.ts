@@ -1,4 +1,5 @@
 import { db } from '@/lib/db'
+import { cache } from 'react'
 
 // ─── TypeScript Interfaces ───
 
@@ -177,7 +178,7 @@ const FALLBACK_SETTINGS: SiteSettings = {
   metaDescription: '',
   googleAnalyticsId: '',
   googleMapsApiKey: '',
-  updatedAt: new Date(),
+  updatedAt: new Date(0),
 }
 
 const FALLBACK_LINKS: NavLink[] = [
@@ -192,15 +193,37 @@ const FALLBACK_LINKS: NavLink[] = [
 
 // ─── Data Fetching Functions (with error handling) ───
 
-export async function getSiteConfig() {
+export const getSiteConfig = cache(async () => {
   try {
-    const settings = await db.siteSetting.findUnique({ where: { id: 'main' } })
-    const links = await db.navLink.findMany({ orderBy: { sortOrder: 'asc' } })
-    const stats = await db.stat.findMany({ orderBy: { sortOrder: 'asc' } })
-    return { settings: settings || FALLBACK_SETTINGS, links: links.length > 0 ? links : FALLBACK_LINKS, stats }
+    const [settings, links, stats] = await Promise.all([
+      db.siteSetting.findUnique({ where: { id: 'main' } }),
+      db.navLink.findMany({ orderBy: { sortOrder: 'asc' } }),
+      db.stat.findMany({ orderBy: { sortOrder: 'asc' } }),
+    ])
+    return { settings: settings || FALLBACK_SETTINGS, links: links.length > 0 ? links : FALLBACK_LINKS, stats, unavailable: !settings }
   } catch {
-    return { settings: FALLBACK_SETTINGS, links: FALLBACK_LINKS, stats: [] }
+    console.error('Public site configuration is temporarily unavailable.')
+    return { settings: FALLBACK_SETTINGS, links: FALLBACK_LINKS, stats: [], unavailable: true }
   }
+})
+
+export function getPublicBaseUrl() {
+  try {
+    const url = new URL(process.env.NEXT_PUBLIC_BASE_URL || 'https://refugiomataatlantica.com.br')
+    if (!['http:', 'https:'].includes(url.protocol)) throw new Error('Invalid public URL')
+    return url.origin
+  } catch {
+    return 'https://refugiomataatlantica.com.br'
+  }
+}
+
+export function getSocialImageUrl(settings: Pick<SiteSettings, 'ogImage' | 'heroImage'>) {
+  const baseUrl = getPublicBaseUrl()
+  try {
+    const image = new URL(settings.ogImage || settings.heroImage || '/images/hero.jpg', baseUrl)
+    if (['http:', 'https:'].includes(image.protocol) && !image.username && !image.password) return image.href
+  } catch { /* An invalid CMS URL must not break metadata. */ }
+  return new URL('/images/hero.jpg', baseUrl).href
 }
 
 export async function getRooms(publishedOnly = true) {
@@ -214,20 +237,22 @@ export async function getRooms(publishedOnly = true) {
       orderBy: { sortOrder: 'asc' },
     })
   } catch {
+    console.error('Public accommodations are temporarily unavailable.')
     return []
   }
 }
 
 export async function getRoomBySlug(slug: string) {
   try {
-    return await db.room.findUnique({
-      where: { slug },
+    return await db.room.findFirst({
+      where: { slug, published: true },
       include: {
         images: { orderBy: { sortOrder: 'asc' } },
         amenities: { orderBy: { sortOrder: 'asc' } },
       },
     })
   } catch {
+    console.error('Public accommodation details are temporarily unavailable.')
     return null
   }
 }
@@ -239,6 +264,7 @@ export async function getExperiences(publishedOnly = true) {
       orderBy: { sortOrder: 'asc' },
     })
   } catch {
+    console.error('Public experiences are temporarily unavailable.')
     return []
   }
 }
@@ -250,6 +276,7 @@ export async function getGalleryImages(publishedOnly = true) {
       orderBy: { sortOrder: 'asc' },
     })
   } catch {
+    console.error('Public gallery is temporarily unavailable.')
     return []
   }
 }
@@ -261,6 +288,7 @@ export async function getTestimonials(publishedOnly = true) {
       orderBy: { sortOrder: 'asc' },
     })
   } catch {
+    console.error('Public testimonials are temporarily unavailable.')
     return []
   }
 }
@@ -272,6 +300,7 @@ export async function getFAQs(publishedOnly = true) {
       orderBy: { sortOrder: 'asc' },
     })
   } catch {
+    console.error('Public frequently asked questions are temporarily unavailable.')
     return []
   }
 }

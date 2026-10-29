@@ -28,9 +28,21 @@ const STATUS_MAP: Record<string, { label: string; className: string }> = {
   confirmed: { label: 'Confirmada', className: 'bg-green-100 text-green-700' },
   cancelled: { label: 'Cancelada', className: 'bg-red-100 text-red-700' },
   completed: { label: 'Concluída', className: 'bg-blue-100 text-blue-700' },
+  payment_review: { label: 'Pagamento em verificação', className: 'bg-orange-100 text-orange-800' },
 }
 
 const STATUS_OPTIONS = ['pending', 'confirmed', 'completed', 'cancelled']
+
+function visibleNote(value: string) {
+  try {
+    const parsed = JSON.parse(value)
+    if (typeof parsed?.adminNote === 'string') return parsed.adminNote
+    if (typeof parsed?.checkout?.expiresAt === 'string') {
+      return `Checkout online até ${new Date(parsed.checkout.expiresAt).toLocaleString('pt-BR')}`
+    }
+  } catch { /* Notes from older reservations are plain text. */ }
+  return value
+}
 
 export default function ReservationsPage() {
   const [items, setItems] = useState<Reservation[]>([])
@@ -57,7 +69,14 @@ export default function ReservationsPage() {
       await adminApi.reservations.updateStatus(id, status)
       setItems((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)))
       toast.success('Status atualizado')
-    } catch { toast.error('Erro ao atualizar') }
+    } catch (error) {
+      let message = 'Erro ao atualizar'
+      if (error instanceof Error) {
+        try { message = JSON.parse(error.message)?.error || message }
+        catch { /* Keep the generic message for non-JSON errors. */ }
+      }
+      toast.error(message)
+    }
     finally { setUpdatingId(null) }
   }
 
@@ -76,7 +95,7 @@ export default function ReservationsPage() {
 
       <div className="flex gap-2 flex-wrap">
         <Button variant={!filter ? 'default' : 'outline'} size="sm" onClick={() => setFilter('')}>Todas</Button>
-        {STATUS_OPTIONS.map((s) => (
+        {[...STATUS_OPTIONS, 'payment_review'].map((s) => (
           <Button key={s} variant={filter === s ? 'default' : 'outline'} size="sm" onClick={() => setFilter(s)}>
             {STATUS_MAP[s]?.label || s}
           </Button>
@@ -105,10 +124,11 @@ export default function ReservationsPage() {
                         {res.room?.name || 'Quarto removido'} · {formatDate(res.checkIn)} → {formatDate(res.checkOut)}
                       </p>
                       <p className="text-sm text-gray-500">{res.guests} hóspede(s) · <span className="font-medium text-gray-900">R$ {res.totalPrice?.toFixed(2)}</span></p>
-                      {res.notes && <p className="text-sm text-gray-400 italic">{res.notes}</p>}
+                      {res.notes && visibleNote(res.notes) && <p className="text-sm text-gray-400 italic">{visibleNote(res.notes)}</p>}
+                      {res.status === 'payment_review' && <p className="max-w-xl text-sm text-orange-800">Pagamento recebido após um conflito de disponibilidade. Antes de confirmar, confira o pagamento e resolva a disponibilidade com o hóspede. Se a estadia não puder ser atendida, providencie o reembolso no provedor e marque como cancelada; alterar o status aqui não realiza o reembolso.</p>}
                     </div>
-                    <div className="flex gap-1 shrink-0">
-                      {STATUS_OPTIONS.filter(s => s !== res.status).map((s) => (
+                    <div className="flex flex-wrap gap-1 sm:max-w-xs">
+                      {(res.status === 'payment_review' ? ['confirmed', 'cancelled'] : STATUS_OPTIONS.filter(s => s !== res.status)).map((s) => (
                         <Button
                           key={s}
                           variant="outline"

@@ -79,6 +79,19 @@
     outline: 2px solid var(--color-primary);
     outline-offset: 2px;
   }
+  footer :focus-visible,
+  header :focus-visible,
+  [role="dialog"] :focus-visible,
+  #hero :focus-visible,
+  #booking :focus-visible {
+    outline-color: var(--color-accent);
+  }
+  [id] {
+    scroll-margin-top: 6rem;
+  }
+  [hidden] {
+    display: none !important;
+  }
   html {
     scroll-behavior: auto;
   }
@@ -119,6 +132,15 @@
   ::-webkit-scrollbar-track { background: var(--color-surface); }
   ::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 4px; }
   ::-webkit-scrollbar-thumb:hover { background: var(--color-text-muted); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* ─── Utilities ─── */

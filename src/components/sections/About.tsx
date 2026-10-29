@@ -1,98 +1,18 @@
-"use client";
-
-import { useReveal } from "@/hooks/useReveal";
-import { Leaf, ImageIcon } from "lucide-react";
+﻿import Image from "next/image";
+import Link from "next/link";
 
 export function About() {
-  const ref = useReveal();
-
   return (
-    <section ref={ref} id="about" className="relative section-padding overflow-hidden">
-      <div className="blob w-[500px] h-[500px] bg-[var(--color-primary-light)] -top-40 -right-40" />
-
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-          {/* Image skeleton */}
-          <div className="reveal-left relative">
-            <div className="rounded-2xl overflow-hidden shadow-xl bg-[var(--color-surface-alt)] flex items-center justify-center aspect-[4/3]">
-              <div className="flex flex-col items-center gap-3 text-[var(--color-text-muted)]">
-                <ImageIcon className="w-12 h-12 opacity-40" />
-                <span className="text-sm opacity-50">Sua imagem aqui</span>
-              </div>
-            </div>
-            {/* Floating card */}
-            <div className="absolute -bottom-6 -right-4 md:right-6 glass-strong rounded-xl p-4 shadow-lg">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-[var(--color-primary)]/10 flex items-center justify-center">
-                  <Leaf className="w-5 h-5 text-[var(--color-primary)]" />
-                </div>
-                <div>
-                  <p className="font-serif text-lg text-[var(--color-text)]">
-                    12 anos
-                  </p>
-                  <p className="text-xs text-[var(--color-text-muted)]">
-                    acolhendo hóspedes
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Content */}
-          <div>
-            <span className="reveal inline-block text-sm font-semibold text-[var(--color-primary)] tracking-wider uppercase mb-4">
-              Nossa História
-            </span>
-
-            <h2 className="reveal font-serif text-[var(--color-text)] mb-6">
-              <span className="text-mask-line">
-                <span>
-                  Um refúgio nascido do
-                  <span className="text-[var(--color-secondary)]"> amor </span>
-                  pela natureza
-                </span>
-              </span>
-            </h2>
-
-            <div className="space-y-4">
-              <p className="reveal text-base leading-relaxed">
-                Em 2012, idealizamos um espaço onde o luxo encontrasse a
-                simplicidade do campo. A partir de uma antiga fazenda de café na
-                Serra da Mantiqueira, nascemos como uma proposta diferente:
-                hospedagem que respeita o tempo da natureza.
-              </p>
-              <p className="reveal text-base leading-relaxed">
-                Hoje, com 8 chalés e suítes integrados à Mata Atlântica, somos
-                referência em turismo sustentável. Cada detalhe — do café da
-                manhã com ingredientes orgânicos da nossa horta às trilhas
-                guiadas por naturalistas — é pensado para que você viva uma
-                experiência autêntica.
-              </p>
-            </div>
-
-            {/* Features mini */}
-            <div className="mt-8 grid grid-cols-2 gap-4" data-stagger>
-              {[
-                { label: "8 Acomodações", desc: "Entre suítes e chalés" },
-                { label: "50 hectares", desc: "De Mata Atlântica" },
-                { label: "15km de trilhas", desc: "Sinalizadas e guiadas" },
-                { label: "Menu autoral", desc: "Com produtos locais" },
-              ].map((item) => (
-                <div
-                  key={item.label}
-                  data-stagger-child
-                  className="p-4 rounded-xl bg-[var(--color-surface)]"
-                >
-                  <p className="font-serif text-lg text-[var(--color-text)]">
-                    {item.label}
-                  </p>
-                  <p className="text-sm text-[var(--color-text-muted)] mt-1">
-                    {item.desc}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
+    <section id="about" className="section-padding">
+      <div className="mx-auto grid max-w-7xl items-center gap-10 px-4 sm:px-6 lg:grid-cols-2 lg:gap-20 lg:px-8">
+        <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-[var(--color-surface)]">
+          <Image src="/images/hero.jpg" alt="Chalés de madeira entre árvores e jardins" fill sizes="(max-width: 1024px) 100vw, 50vw" className="object-cover" />
+        </div>
+        <div>
+          <h2 className="mb-6 font-serif">Um tempo para descansar</h2>
+          <p className="mb-5 text-base leading-relaxed">Conheça a pousada e escolha a acomodação para sua próxima viagem. Nas páginas dos quartos, você encontra fotos, capacidade e comodidades de cada opção.</p>
+          <p className="mb-7 text-base leading-relaxed">Explore a pousada, consulte as condições da estadia e fale com nossa equipe para organizar sua visita.</p>
+          <Link href="/sobre" className="inline-flex min-h-11 items-center font-semibold underline underline-offset-4">Conhecer a pousada</Link>
         </div>
       </div>
     </section>

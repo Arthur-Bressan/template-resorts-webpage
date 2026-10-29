@@ -1,160 +1,39 @@
-"use client";
-
-import Image from "next/image";
-import { useReveal } from "@/hooks/useReveal";
-import { useCardTilt } from "@/hooks/useCardTilt";
-import { Users, Maximize2, CheckCircle2, ImageIcon, ArrowRight, CalendarCheck } from "lucide-react";
+﻿import Image from "next/image";
 import Link from "next/link";
 import type { Room } from "@/lib/data";
+import { Users, Maximize2, ArrowRight } from "lucide-react";
 
-function RoomCard({ room }: { room: Room }) {
-  const tiltRef = useCardTilt<HTMLElement>();
-
-  return (
-    <article
-      ref={tiltRef}
-      data-stagger-child
-      data-cursor="card"
-      data-cursor-label="Ver detalhes"
-      className="group relative bg-[var(--color-background)] rounded-2xl overflow-hidden shadow-md transition-shadow duration-500 hover:shadow-xl"
-    >
-        {/* Image skeleton — clickable overlay for the image area */}
-        <Link
-          href={`/quartos/${room.slug}`}
-          className="relative h-64 block overflow-hidden bg-[var(--color-surface-alt)]"
-        >
-          {/* Room image */}
-          {room.images[0]?.src ? (
-            <Image
-              src={room.images[0].src}
-              alt={room.images[0].alt || room.name}
-              fill
-              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-              className="object-cover transition-transform duration-700 ease-out group-hover:scale-110 group-hover:-translate-y-3"
-              loading="lazy"
-            />
-          ) : (
-            <div className="flex flex-col items-center gap-2 text-[var(--color-text-muted)] transition-transform duration-700 ease-out group-hover:scale-110 group-hover:-translate-y-3">
-              <ImageIcon className="w-10 h-10 opacity-30 group-hover:opacity-50 transition-opacity duration-500" />
-              <span className="text-xs opacity-40">{room.name}</span>
-            </div>
-          )}
-          {/* Overlay gradient on hover */}
-          <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-primary-dark)]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-
-          <div className="absolute top-4 right-4 glass-strong rounded-full px-3 py-1.5 transition-transform duration-500 group-hover:scale-105">
-            <span className="text-sm font-semibold text-[var(--color-primary-dark)]">
-              R$ {room.price}
-            </span>
-            <span className="text-xs text-[var(--color-text-muted)]">
-              /noite
-            </span>
-          </div>
-          <div className="absolute top-4 left-4 glass-strong rounded-full px-3 py-1.5 flex items-center gap-1.5 transition-transform duration-500 group-hover:scale-105">
-            <Users className="w-3.5 h-3.5 text-[var(--color-primary)]" />
-            <span className="text-xs font-medium text-[var(--color-text)]">
-              {room.capacity} hóspedes
-            </span>
-          </div>
-        </Link>
-
-        {/* Content */}
-        <div className="p-6">
-          <Link href={`/quartos/${room.slug}`} className="block">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="font-serif text-xl text-[var(--color-text)] transition-colors duration-300 group-hover:text-[var(--color-primary)]">
-                {room.name}
-              </h3>
-              <div className="flex items-center gap-1.5 text-sm text-[var(--color-text-muted)]">
-                <Maximize2 className="w-3.5 h-3.5" />
-                {room.size}m²
-              </div>
-            </div>
-
-            <p className="text-sm text-[var(--color-text-muted)] leading-relaxed mb-5">
-              {room.description}
-            </p>
-          </Link>
-
-          {/* Amenity tags — stagger fade-in on hover */}
-          <div className="flex flex-wrap gap-2 mb-5">
-            {room.amenities.slice(0, 4).map((a, i) => (
-              <span
-                key={a.id}
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[var(--color-surface)] text-xs text-[var(--color-text-muted)] transition-all duration-300 ease-out group-hover:translate-y-[-2px] group-hover:shadow-sm"
-                style={{ transitionDelay: `${i * 40}ms` }}
-              >
-                <CheckCircle2 className="w-3 h-3 text-[var(--color-primary)] transition-transform duration-500 group-hover:scale-125" />
-                {a.name}
-              </span>
-            ))}
-            {room.amenities.length > 4 && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[var(--color-surface)] text-xs text-[var(--color-text-muted)] transition-all duration-300 ease-out" style={{ transitionDelay: "180ms" }}>
-                +{room.amenities.length - 4}
-              </span>
-            )}
-          </div>
-
-          {/* CTA buttons */}
-          <div className="flex gap-3">
-            <Link
-              href={`/quartos/${room.slug}`}
-              className="relative flex-1 py-3 rounded-xl bg-[var(--color-secondary)] text-white font-medium text-sm overflow-hidden flex items-center justify-center gap-2 group/btn transition-colors duration-500 hover:bg-[var(--color-secondary-light)]"
-            >
-              {/* Shimmer sweep on hover */}
-              <span className="absolute inset-0 -translate-x-full group-hover/btn:translate-x-full transition-transform duration-700 ease-out bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-              <span className="relative z-10">Ver mais</span>
-              <ArrowRight className="relative z-10 w-4 h-4 transition-transform duration-500 group-hover/btn:translate-x-1.5" />
-            </Link>
-            <Link
-              href={`/reservas?room=${room.slug}`}
-              className="relative flex-1 py-3 rounded-xl bg-[var(--color-primary)] text-white font-medium text-sm overflow-hidden flex items-center justify-center gap-2 group/btn transition-colors duration-500 hover:bg-[var(--color-primary-light)]"
-            >
-              <span className="absolute inset-0 -translate-x-full group-hover/btn:translate-x-full transition-transform duration-700 ease-out bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-              <CalendarCheck className="relative z-10 w-4 h-4" />
-              <span className="relative z-10">Reservar agora</span>
-            </Link>
-          </div>
-        </div>
-    </article>
-  );
-}
-
-interface RoomsProps {
-  rooms: Room[];
-}
+interface RoomsProps { rooms: Room[]; }
 
 export function Rooms({ rooms }: RoomsProps) {
-  const ref = useReveal();
-
   return (
-    <section
-      ref={ref}
-      id="rooms"
-      className="relative section-padding bg-[var(--color-surface)] overflow-hidden"
-    >
-      <div className="blob w-[600px] h-[600px] bg-[var(--color-secondary-light)] -bottom-60 -left-60" />
-
+    <section id="rooms" className="section-padding bg-[var(--color-surface)]">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-16">
-          <span className="reveal inline-block text-sm font-semibold text-[var(--color-primary)] tracking-wider uppercase mb-4">
-            Acomodações
-          </span>
-          <h2 className="reveal font-serif text-[var(--color-text)] mb-4">
-            <span className="text-mask-line">
-              <span>Encontre seu refúgio</span>
-            </span>
-          </h2>
-          <p className="reveal text-base text-[var(--color-text-muted)] max-w-xl mx-auto">
-            Cada suíte e chalé foi pensado para integrar conforto e natureza.
-          </p>
+        <div className="mb-10 max-w-2xl">
+          <h2 className="mb-4 font-serif">Encontre seu refúgio</h2>
+          <p className="text-base">Compare as acomodações, conheça os detalhes e escolha sua estadia.</p>
         </div>
-
-        <div className="grid md:grid-cols-2 gap-6" data-stagger>
-          {rooms.map((room) => (
-            <RoomCard key={room.id} room={room} />
-          ))}
-        </div>
+        {rooms.length === 0 ? <div className="py-8">
+          <p className="mb-4">Não foi possível apresentar as acomodações no momento.</p>
+          <a href="/#booking" className="inline-flex min-h-11 items-center font-semibold underline underline-offset-4">Consulte a equipe sobre sua estadia</a>
+        </div> : <div className="grid gap-x-8 gap-y-12 md:grid-cols-2">
+          {rooms.map((room) => <article key={room.id} className="min-w-0">
+            <Link href={`/quartos/${room.slug}`} className="group relative mb-5 block aspect-[4/3] overflow-hidden rounded-xl bg-[var(--color-surface-alt)]">
+              {room.images[0]?.src ? <Image src={room.images[0].src} alt={room.images[0].alt || room.name} fill sizes="(max-width: 768px) 100vw, 50vw" className="object-cover transition-transform duration-500 group-hover:scale-[1.03]" /> : <span className="flex h-full items-center justify-center p-6 text-sm text-[var(--color-text-muted)]">Fotos desta acomodação indisponíveis</span>}
+            </Link>
+            <div className="mb-3 flex flex-wrap items-baseline justify-between gap-3">
+              <h3 className="font-serif text-2xl"><Link href={`/quartos/${room.slug}`}>{room.name}</Link></h3>
+              <p className="text-sm"><strong className="font-semibold text-[var(--color-text)]">{room.price.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</strong> / noite</p>
+            </div>
+            <div className="mb-4 flex flex-wrap gap-x-5 gap-y-2 text-sm text-[var(--color-text-muted)]"><span className="flex items-center gap-1.5"><Users aria-hidden="true" className="h-4 w-4" />Até {room.capacity} hóspedes</span><span className="flex items-center gap-1.5"><Maximize2 aria-hidden="true" className="h-4 w-4" />{room.size} m²</span></div>
+            <p className="mb-5 text-base leading-relaxed">{room.description}</p>
+            {room.amenities.length > 0 && <ul className="mb-6 flex flex-wrap gap-x-5 gap-y-2 text-sm text-[var(--color-text)]">{room.amenities.slice(0, 4).map((amenity) => <li key={amenity.id}>{amenity.name}</li>)}</ul>}
+            <div className="flex flex-wrap items-center gap-4">
+              <Link href={`/reservas?room=${encodeURIComponent(room.slug)}`} className="inline-flex min-h-11 items-center justify-center rounded-full bg-[var(--color-primary)] px-5 py-3 text-sm font-semibold text-white hover:bg-[var(--color-primary-dark)] hover:text-white">Reservar agora</Link>
+              <Link href={`/quartos/${room.slug}`} className="inline-flex min-h-11 items-center gap-2 text-sm font-semibold underline underline-offset-4">Ver detalhes<ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>
+            </div>
+          </article>)}
+        </div>}
       </div>
     </section>
   );

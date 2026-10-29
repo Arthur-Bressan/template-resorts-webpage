@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { siteConfig } from "@/data/site"
+import { getSiteConfig } from "@/lib/data"
 import type { Metadata } from "next"
 
 export const metadata: Metadata = {
@@ -7,9 +7,14 @@ export const metadata: Metadata = {
   description: "Política de privacidade e proteção de dados pessoais conforme a LGPD — Refúgio Mata Atlântica.",
 }
 
-export default function PoliticaDePrivacidade() {
+export const dynamic = 'force-dynamic'
+
+export default async function PoliticaDePrivacidade() {
+  const { settings: siteConfig } = await getSiteConfig()
   return (
     <main
+      id="main-content"
+      tabIndex={-1}
       className="min-h-screen"
       style={{
         backgroundColor: "var(--color-background)",
@@ -40,7 +45,7 @@ export default function PoliticaDePrivacidade() {
           className="mb-12 text-sm"
           style={{ color: "var(--color-text-muted)" }}
         >
-          Última atualização: Janeiro de 2025
+          Última atualização do texto: Janeiro de 2025
         </p>
 
         {/* 1. Controlador dos dados */}
@@ -50,15 +55,14 @@ export default function PoliticaDePrivacidade() {
           </h2>
           <p className="leading-relaxed">
             O controlador dos seus dados pessoais é{" "}
-            <strong>{siteConfig.name}</strong>, com sede na{" "}
-            <strong>{siteConfig.address}</strong>. Para quaisquer questões
-            relacionadas a esta política, entre em contato pelo e-mail{" "}
+            <strong>{siteConfig.name}</strong>{siteConfig.address ? <>, com endereço em <strong>{siteConfig.address}</strong></> : null}. Para quaisquer questões
+            relacionadas a esta política, entre em contato pelos canais disponíveis:{" "}
             <a
-              href={`mailto:${siteConfig.email}`}
+              href={siteConfig.email ? `mailto:${siteConfig.email}` : '/#booking'}
               className="underline"
               style={{ color: "var(--color-primary)" }}
             >
-              {siteConfig.email}
+              {siteConfig.email || 'opções de contato do site'}
             </a>
             .
           </p>
@@ -244,21 +248,21 @@ export default function PoliticaDePrivacidade() {
           </h2>
           <p className="leading-relaxed">
             Para exercer qualquer dos direitos descritos acima, entre em
-            contato conosco através do e-mail{" "}
+            contato conosco:{" "}
             <a
-              href={`mailto:${siteConfig.email}`}
+              href={siteConfig.email ? `mailto:${siteConfig.email}` : '/#booking'}
               className="underline"
               style={{ color: "var(--color-primary)" }}
             >
-              {siteConfig.email}
+              {siteConfig.email || 'opções de contato do site'}
             </a>{" "}
-            ou pelo telefone{" "}
+            ou{" "}
             <a
-              href={`tel:${siteConfig.phone}`}
+              href={siteConfig.phone ? `tel:${siteConfig.phone}` : '/#booking'}
               className="underline"
               style={{ color: "var(--color-primary)" }}
             >
-              {siteConfig.phone}
+              {siteConfig.phone || 'opções de contato do site'}
             </a>
             . As solicitações serão respondidas no prazo de até 15
             (quinze) dias, conforme previsto na LGPD.
@@ -297,10 +301,10 @@ export default function PoliticaDePrivacidade() {
             </li>
           </ul>
           <p className="mt-4 leading-relaxed">
-            Você pode gerenciar suas preferências de cookies a qualquer
-            momento através das configurações do seu navegador. A
-            desativação de certos cookies pode afetar a funcionalidade
-            do site.
+            Os recursos opcionais de análise de navegação são iniciados apenas
+            após sua autorização. Você pode alterar sua escolha pelo botão
+            “Preferências de cookies” no rodapé. Rejeitar esses recursos não
+            impede o uso das funcionalidades essenciais do site.
           </p>
         </article>
 
@@ -339,26 +343,26 @@ export default function PoliticaDePrivacidade() {
               {siteConfig.name}
             </p>
             <p style={{ color: "var(--color-text-muted)" }}>
-              {siteConfig.address}
+              {siteConfig.address || 'Consulte os canais de atendimento disponíveis no site.'}
             </p>
             <p style={{ color: "var(--color-text-muted)" }}>
               E-mail: {" "}
               <a
-                href={`mailto:${siteConfig.email}`}
+                href={siteConfig.email ? `mailto:${siteConfig.email}` : '/#booking'}
                 className="underline"
                 style={{ color: "var(--color-primary)" }}
               >
-                {siteConfig.email}
+                {siteConfig.email || 'Ver opções de contato'}
               </a>
             </p>
             <p style={{ color: "var(--color-text-muted)" }}>
               Telefone: {" "}
               <a
-                href={`tel:${siteConfig.phone}`}
+                href={siteConfig.phone ? `tel:${siteConfig.phone}` : '/#booking'}
                 className="underline"
                 style={{ color: "var(--color-primary)" }}
               >
-                {siteConfig.phone}
+                {siteConfig.phone || 'Ver opções de contato'}
               </a>
             </p>
           </div>

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getRoomBySlug, getRooms } from "@/lib/data";
+import { getRoomBySlug, getRooms, getSiteConfig, getSocialImageUrl } from "@/lib/data";
 
 
 type Props = {
@@ -9,17 +9,21 @@ type Props = {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   try {
     const { slug } = await params;
-    const room = await getRoomBySlug(slug);
+    const [room, { settings }] = await Promise.all([getRoomBySlug(slug), getSiteConfig()]);
     if (!room) return { title: "Acomodação não encontrada" };
+    const title = `${room.name} — ${settings.name}`;
+    const image = getSocialImageUrl(settings);
 
     return {
       title: `${room.name} — ${room.bedType} | ${room.size}m²`,
       description: room.description,
       openGraph: {
-        title: `${room.name} — Refúgio Mata Atlântica`,
+        title,
         description: room.description,
         type: "website",
+        images: [{ url: image, alt: settings.name }],
       },
+      twitter: { card: "summary_large_image", title, description: room.description, images: [image] },
     };
   } catch {
     return { title: "Acomodação — Refúgio Mata Atlântica" };

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useMemo, FormEvent, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useState, useEffect, useMemo, useCallback, FormEvent, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   Card,
@@ -24,7 +24,6 @@ import { Honeypot } from "@/components/ui/Honeypot";
 import { ConsentCheckbox } from "@/components/ui/ConsentCheckbox";
 import {
   CalendarDays,
-  Users,
   User,
   Mail,
   Phone,
@@ -53,17 +52,26 @@ function formatBRL(value: number) {
 }
 
 function getTodayString() {
-  const d = new Date();
-  return d.toISOString().split("T")[0];
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit",
+  }).formatToParts(new Date());
+  const part = (type: string) => parts.find((p) => p.type === type)!.value;
+  return `${part("year")}-${part("month")}-${part("day")}`;
+}
+
+function nextDay(value: string) {
+  const date = new Date(`${value}T00:00:00.000Z`);
+  date.setUTCDate(date.getUTCDate() + 1);
+  return date.toISOString().slice(0, 10);
 }
 
 export default function ReservasPageWrapper() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center bg-[var(--color-background)]">
-          <Loader2 className="w-8 h-8 animate-spin text-[var(--color-primary)]" />
-        </div>
+        <main id="main-content" tabIndex={-1} className="min-h-screen flex items-center justify-center bg-[var(--color-background)]">
+          <p role="status">Carregando reservas…</p>
+        </main>
       }
     >
       <ReservasPage />
@@ -72,11 +80,13 @@ export default function ReservasPageWrapper() {
 }
 
 function ReservasPage() {
-  const router = useRouter();
   const [rooms, setRooms] = useState<RoomOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [roomsError, setRoomsError] = useState("");
+  const [adjustment, setAdjustment] = useState("");
+  const [statusUrl, setStatusUrl] = useState("");
 
   // Form state
   const [roomId, setRoomId] = useState("");
@@ -91,34 +101,54 @@ function ReservasPage() {
   const searchParams = useSearchParams();
   const preselectedSlug = searchParams.get("room");
 
+  const loadRooms = useCallback(async (signal?: AbortSignal) => {
+    setLoading(true);
+    setRoomsError("");
+    try {
+      const response = await fetch("/api/rooms/public", { cache: "no-store", signal });
+      if (!response.ok) throw new Error("rooms unavailable");
+      const data: RoomOption[] = await response.json();
+      if (!Array.isArray(data)) throw new Error("invalid rooms");
+      const available = data.filter((room) => room.capacity > 0 && room.price > 0);
+      setRooms(available);
+      setRoomId((current) => available.find((room) => room.slug === preselectedSlug)?.id ||
+        available.find((room) => room.id === current)?.id || available[0]?.id || "");
+    } catch {
+      if (!signal?.aborted) { setRooms([]); setRoomsError("Não foi possível carregar as acomodações. Tente novamente em instantes."); }
+    } finally {
+      if (!signal?.aborted) setLoading(false);
+    }
+  }, [preselectedSlug]);
+
   useEffect(() => {
-    fetch("/api/rooms/public")
-      .then((r) => r.json())
-      .then((data: RoomOption[]) => {
-        setRooms(data);
-        // Pre-select room from URL query param
-        if (preselectedSlug) {
-          const match = data.find((r) => r.slug === preselectedSlug);
-          if (match) {
-            setRoomId(match.id);
-          }
-        } else if (data.length > 0) {
-          setRoomId(data[0].id);
-        }
-      })
-      .catch(() => setError("Erro ao carregar quartos."))
-      .finally(() => setLoading(false));
-  }, []);
+    const controller = new AbortController();
+    void loadRooms(controller.signal);
+    return () => controller.abort();
+  }, [loadRooms]);
 
   // Auto-set min check-out when check-in changes
   const minCheckOut = useMemo(() => {
-    if (!checkIn) return getTodayString();
-    return checkIn;
+    return nextDay(checkIn || getTodayString());
   }, [checkIn]);
 
-  // Reset check-out if it's before check-in (derived, not via effect)
-
   const selectedRoom = rooms.find((r) => r.id === roomId);
+
+  function changeRoom(id: string) {
+    setRoomId(id);
+    const room = rooms.find((option) => option.id === id);
+    if (room && guests > room.capacity) {
+      setGuests(room.capacity);
+      setAdjustment(`O número de hóspedes foi ajustado para ${room.capacity}, a capacidade deste quarto.`);
+    }
+  }
+
+  function changeCheckIn(value: string) {
+    setCheckIn(value);
+    if (value && (!checkOut || checkOut <= value)) {
+      setCheckOut(nextDay(value));
+      setAdjustment("O check-out foi ajustado para o dia seguinte ao check-in. A estadia mínima é de uma noite.");
+    }
+  }
 
   const nights = useMemo(() => {
     if (!checkIn || !checkOut) return 0;
@@ -129,7 +159,7 @@ function ReservasPage() {
 
   const totalPrice = useMemo(() => {
     if (!selectedRoom || nights === 0) return 0;
-    return selectedRoom.price * nights;
+    return Math.round(selectedRoom.price * 100) * nights / 100;
   }, [selectedRoom, nights]);
 
   const guestOptions = useMemo(() => {
@@ -139,8 +169,11 @@ function ReservasPage() {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    if (submitting) return;
     setError("");
+    setStatusUrl("");
     setSubmitting(true);
+    const website = new FormData(e.currentTarget as HTMLFormElement).get("website") || "";
 
     try {
       const res = await fetch("/api/reservations/create-preference", {
@@ -155,7 +188,7 @@ function ReservasPage() {
           guestEmail,
           guestPhone,
           consent,
-          website: "", // honeypot — should be empty
+          website,
         }),
       });
 
@@ -163,14 +196,17 @@ function ReservasPage() {
 
       if (!res.ok) {
         setError(data.error || "Erro ao criar reserva.");
+        if (typeof data.statusUrl === "string") setStatusUrl(data.statusUrl);
         setSubmitting(false);
         return;
       }
 
-      // Redirect to MP or mock page
-      const url = data.init_point || data.sandbox_init_point;
+      const url = data.init_point;
       if (url) {
         window.location.href = url;
+      } else {
+        setError("O serviço de pagamento não retornou um link válido. Tente novamente mais tarde.");
+        setSubmitting(false);
       }
     } catch {
       setError("Erro de conexão. Tente novamente.");
@@ -187,18 +223,19 @@ function ReservasPage() {
     guestEmail.trim() &&
     guestPhone.trim() &&
     guests >= 1 &&
+    selectedRoom && guests <= selectedRoom.capacity &&
     consent;
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[var(--color-background)]">
-        <Loader2 className="w-8 h-8 animate-spin text-[var(--color-primary)]" />
-      </div>
+      <main id="main-content" tabIndex={-1} className="min-h-screen flex items-center justify-center bg-[var(--color-background)]">
+        <p role="status">Carregando acomodações…</p>
+      </main>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[var(--color-background)]">
+    <main id="main-content" tabIndex={-1} className="min-h-screen bg-[var(--color-background)]">
       {/* Top bar */}
       <div className="bg-[var(--color-primary-dark)] py-4">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -229,7 +266,12 @@ function ReservasPage() {
       {/* Form Section */}
       <section className="py-12 sm:py-16">
         <div className="mx-auto max-w-3xl px-4 sm:px-6">
-          <form onSubmit={handleSubmit} className="relative">
+          {rooms.length === 0 ? <div className="text-center space-y-5 py-8">
+            <h2 className="font-serif text-2xl">Acomodações indisponíveis no momento</h2>
+            <p role={roomsError ? "alert" : "status"}>{roomsError || "Não há acomodações disponíveis para reserva online. Consulte novamente mais tarde."}</p>
+            <Button type="button" onClick={() => void loadRooms()}>Tentar carregar novamente</Button>
+            <Link href="/#location" className="block underline">Ver os contatos da pousada</Link>
+          </div> : <form onSubmit={handleSubmit} className="relative" aria-busy={submitting}>
             <Honeypot />
 
             {/* Room & Dates */}
@@ -247,7 +289,7 @@ function ReservasPage() {
                 {/* Room select */}
                 <div className="space-y-2">
                   <Label htmlFor="room">Quarto</Label>
-                  <Select value={roomId} onValueChange={setRoomId}>
+                  <Select value={roomId} onValueChange={changeRoom}>
                     <SelectTrigger id="room" className="w-full">
                       <SelectValue placeholder="Selecione um quarto" />
                     </SelectTrigger>
@@ -276,7 +318,7 @@ function ReservasPage() {
                       type="date"
                       min={getTodayString()}
                       value={checkIn}
-                      onChange={(e) => setCheckIn(e.target.value)}
+                      onChange={(e) => changeCheckIn(e.target.value)}
                       required
                     />
                   </div>
@@ -292,6 +334,9 @@ function ReservasPage() {
                     />
                   </div>
                 </div>
+
+                <p role="status" aria-live="polite" className="text-sm text-[var(--color-text-muted)]">{adjustment || "Escolha pelo menos uma noite. A disponibilidade será verificada antes de abrir o pagamento."}</p>
+                {checkIn && checkOut && checkOut <= checkIn && <p role="alert" className="text-sm text-red-700">O check-out deve ser pelo menos um dia após o check-in.</p>}
 
                 {/* Guests */}
                 <div className="space-y-2">
@@ -427,8 +472,9 @@ function ReservasPage() {
               />
 
               {error && (
-                <div className="rounded-lg bg-red-50 border border-red-200 p-4 text-sm text-red-700">
+                <div role="alert" className="rounded-lg bg-red-50 border border-red-200 p-4 text-sm text-red-700">
                   {error}
+                  {statusUrl && <Link href={statusUrl} className="block underline mt-2">Consultar esta tentativa de reserva</Link>}
                 </div>
               )}
 
@@ -455,9 +501,9 @@ function ReservasPage() {
                 Pagamento seguro processado pelo Mercado Pago
               </p>
             </div>
-          </form>
+          </form>}
         </div>
       </section>
-    </div>
+    </main>
   );
 }

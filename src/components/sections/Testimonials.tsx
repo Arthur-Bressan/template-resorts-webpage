@@ -93,11 +93,17 @@ export function Testimonials({ testimonials }: TestimonialsProps) {
         </div>
 
         {/* Cards */}
+        {testimonials.length === 0 ? (
+          <p className="mx-auto max-w-xl py-8 text-center text-[var(--color-text-muted)]">
+            Não há depoimentos disponíveis nesta página no momento. <a href="/#booking" className="font-medium underline underline-offset-4">Fale com a equipe</a> para tirar suas dúvidas sobre a pousada.
+          </p>
+        ) : (
         <div className="grid md:grid-cols-3 gap-6" data-stagger>
           {testimonials.map((t) => (
             <TestimonialCard key={t.id} t={t} />
           ))}
         </div>
+        )}
       </div>
     </section>
   );

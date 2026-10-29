@@ -36,7 +36,7 @@ export default async function Home() {
       <div className="min-h-screen flex flex-col">
         <Header siteSettings={settings} navLinks={links} />
 
-        <main className="flex-1">
+        <main id="main-content" tabIndex={-1} className="flex-1">
           <Hero siteSettings={settings} />
           <SocialProof />
           <About />
@@ -46,7 +46,7 @@ export default async function Home() {
           <Location siteSettings={settings} />
           <Testimonials testimonials={testimonials} />
           <FAQ faqItems={faqItems} />
-          <BookingCTA siteSettings={settings} />
+          <BookingCTA siteSettings={settings} rooms={rooms} />
         </main>
 
         <Footer siteSettings={settings} stats={stats} />

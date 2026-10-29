@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import { Analytics } from "@vercel/analytics/next";
 import { Fraunces, Nunito_Sans } from "next/font/google";
 import { CustomCursor } from "@/components/layout/CustomCursor";
 import { CookieConsent } from "@/components/layout/CookieConsent";
+import { ConsentAnalytics } from "@/components/layout/ConsentAnalytics";
 import { WhatsAppFloat } from "@/components/ui/WhatsAppFloat";
-import { db } from "@/lib/db";
+import { getPublicBaseUrl, getSiteConfig, getSocialImageUrl } from "@/lib/data";
 import "./globals.css";
 
 const fraunces = Fraunces({
@@ -22,12 +22,15 @@ const nunitoSans = Nunito_Sans({
 });
 
 export async function generateMetadata(): Promise<Metadata> {
-  try {
-    const settings = await db.siteSetting.findUnique({ where: { id: 'main' } });
-    const title = settings?.metaTitle || settings?.name || "Refúgio Mata Atlântica";
-    const description = settings?.metaDescription || settings?.description || "Pousada premium na Mata Atlântica";
+    const { settings } = await getSiteConfig();
+    const title = settings.metaTitle || settings.name || "Refúgio Mata Atlântica";
+    const description = settings.metaDescription || settings.description || "Pousada na Mata Atlântica";
+    const baseUrl = getPublicBaseUrl();
+    const image = getSocialImageUrl(settings);
 
     return {
+      metadataBase: new URL(baseUrl),
+      referrer: 'same-origin',
       title: `${title} — Pousada & Spa`,
       description,
       icons: {
@@ -50,17 +53,11 @@ export async function generateMetadata(): Promise<Metadata> {
         title: `${title} — Pousada & Spa`,
         description,
         type: "website",
+        locale: "pt_BR",
+        images: [{ url: image, alt: settings.name }],
       },
+      twitter: { card: 'summary_large_image', title, description, images: [image] },
     };
-  } catch {
-    return {
-      title: "Refúgio Mata Atlântica — Pousada & Spa",
-      description: "Pousada premium na Mata Atlântica",
-      icons: {
-        icon: '/favicon.png',
-      },
-    };
-  }
 }
 
 export default async function RootLayout({
@@ -68,23 +65,21 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  let settings = null;
-  try {
-    settings = await db.siteSetting.findUnique({ where: { id: 'main' } });
-  } catch {
-    // DB unreachable — WhatsAppFloat will be hidden gracefully
-  }
+  const { settings } = await getSiteConfig();
 
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <body
         className={`${fraunces.variable} ${nunitoSans.variable} antialiased`}
       >
+        <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-lg focus:bg-white focus:px-5 focus:py-3 focus:text-[var(--color-primary-dark)]">
+          Pular para o conteúdo
+        </a>
         <CustomCursor />
         {children}
         <CookieConsent />
-        {settings && <WhatsAppFloat siteSettings={settings} />}
-        <Analytics />
+        {/^\d{10,15}$/.test(settings.whatsapp.replace(/\D/g, '')) && <WhatsAppFloat siteSettings={{ ...settings, whatsapp: settings.whatsapp.replace(/\D/g, '') }} />}
+        <ConsentAnalytics googleAnalyticsId={settings.googleAnalyticsId} />
       </body>
     </html>
   );

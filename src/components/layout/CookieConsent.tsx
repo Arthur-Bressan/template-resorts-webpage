@@ -21,15 +21,23 @@ export function CookieConsent() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
+    const reopen = () => setVisible(true);
+    window.addEventListener("cookie-consent-open", reopen);
     const stored = getStoredConsent();
-    if (!stored) {
-      const id = requestAnimationFrame(() => setVisible(true));
-      return () => cancelAnimationFrame(id);
-    }
+    const id = !stored ? requestAnimationFrame(() => setVisible(true)) : null;
+    return () => {
+      window.removeEventListener("cookie-consent-open", reopen);
+      if (id !== null) cancelAnimationFrame(id);
+    };
   }, []);
 
   const handleConsent = useCallback((value: ConsentValue) => {
-    localStorage.setItem(CONSENT_KEY, value);
+    try {
+      localStorage.setItem(CONSENT_KEY, value);
+    } catch {
+      // The current-tab choice still applies when browser storage is unavailable.
+    }
+    window.dispatchEvent(new CustomEvent("cookie-consent-change", { detail: value }));
     setVisible(false);
   }, []);
 
@@ -43,8 +51,8 @@ export function CookieConsent() {
     >
       <div className="glass rounded-xl shadow-lg max-w-4xl mx-auto p-4 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center gap-4">
         <p className="text-sm text-text-muted flex-1 leading-relaxed">
-          Utilizamos cookies para melhorar sua experiência. Ao continuar
-          navegando, você concorda com nossa{" "}
+          Você pode permitir a análise de navegação ou rejeitar os recursos
+          não essenciais. Sua escolha não impede o uso do site. Consulte nossa{" "}
           <Link
             href="/politica-de-privacidade"
             className="underline underline-offset-2 font-medium text-primary hover:text-primary-dark transition-colors"

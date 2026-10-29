@@ -27,7 +27,7 @@ export default async function QuartoPage({ params }: Props) {
     <SmoothScrollProvider>
       <div className="min-h-screen flex flex-col">
         <Header siteSettings={settings} navLinks={links} />
-        <main className="flex-1">
+        <main id="main-content" tabIndex={-1} className="flex-1">
           <RoomDetailPage room={room} allRooms={allRooms} siteSettings={settings} />
         </main>
         <Footer siteSettings={settings} stats={stats} />

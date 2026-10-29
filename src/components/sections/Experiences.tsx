@@ -100,11 +100,17 @@ export function Experiences({ experiences }: ExperiencesProps) {
         </div>
 
         {/* Grid */}
+        {experiences.length === 0 ? (
+          <p className="mx-auto max-w-xl py-8 text-center text-[var(--color-text-muted)]">
+            As experiências estão indisponíveis no momento. <a href="/#booking" className="font-medium underline underline-offset-4">Fale com a equipe</a> para consultar as opções para sua estadia.
+          </p>
+        ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6" data-stagger>
           {experiences.map((exp, idx) => (
             <ExperienceCard key={exp.id} exp={exp} idx={idx} />
           ))}
         </div>
+        )}
       </div>
     </section>
   );

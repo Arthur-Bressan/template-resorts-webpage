@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
+import * as Dialog from '@radix-ui/react-dialog'
 import {
   LayoutDashboard,
   BedDouble,
@@ -101,6 +102,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    const desktop = window.matchMedia('(min-width: 1024px)')
+    const closeOnDesktop = () => { if (desktop.matches) setSidebarOpen(false) }
+    desktop.addEventListener('change', closeOnDesktop)
+    return () => desktop.removeEventListener('change', closeOnDesktop)
+  }, [])
+
+  useEffect(() => {
+    if (pathname === '/admin/login') {
+      setLoading(false)
+      return
+    }
     const token = getToken()
     if (!token) {
       router.replace('/admin/login')
@@ -115,7 +127,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       clearToken()
       router.replace('/admin/login')
     })
-  }, [router])
+  }, [pathname, router])
 
   const handleLogout = () => {
     clearToken()
@@ -127,36 +139,42 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return pathname.startsWith(href)
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Mobile overlay */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
+  if (pathname === '/admin/login') return <main id="main-content" tabIndex={-1}>{children}</main>
 
-      {/* Sidebar */}
-      <aside
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-gray-900 transition-transform duration-200 lg:translate-x-0 ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
-      >
+  if (loading) return <main id="main-content" tabIndex={-1} className="flex min-h-screen items-center justify-center" aria-busy="true"><p role="status">Carregando painel…</p></main>
+
+  return (
+    <Dialog.Root open={sidebarOpen} onOpenChange={setSidebarOpen}>
+    <div className="min-h-screen bg-gray-50">
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 bg-gray-900 lg:block" aria-label="Navegação do painel">
         <SidebarContent pathname={pathname} onClose={() => setSidebarOpen(false)} onLogout={handleLogout} />
       </aside>
+
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/50 lg:hidden" />
+        <Dialog.Content id="admin-mobile-navigation" aria-describedby={undefined} className="fixed inset-y-0 left-0 z-[60] flex h-dvh w-72 max-w-[90vw] flex-col overflow-y-auto bg-gray-900 lg:hidden">
+          <Dialog.Title className="sr-only">Navegação do painel</Dialog.Title>
+          <Dialog.Close className="absolute right-2 top-2 rounded-lg p-3 text-white hover:bg-gray-800" aria-label="Fechar navegação do painel"><X className="h-5 w-5" /></Dialog.Close>
+          <SidebarContent pathname={pathname} onClose={() => setSidebarOpen(false)} onLogout={handleLogout} />
+        </Dialog.Content>
+      </Dialog.Portal>
 
       {/* Main content */}
       <div className="lg:pl-64">
         {/* Top header */}
         <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-gray-200 bg-white px-4 sm:px-6">
           <div className="flex items-center gap-3">
+            <Dialog.Trigger asChild>
             <button
-              onClick={() => setSidebarOpen(true)}
+              type="button"
+              aria-label={sidebarOpen ? 'Fechar navegação do painel' : 'Abrir navegação do painel'}
+              aria-expanded={sidebarOpen}
+              aria-controls="admin-mobile-navigation"
               className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 lg:hidden"
             >
               {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
+            </Dialog.Trigger>
             <h1 className="text-lg font-semibold text-gray-900">
               {navItems.find((i) => isActive(i.href))?.label || 'Admin'}
             </h1>
@@ -165,15 +183,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <span className="hidden text-sm text-gray-500 sm:inline">
               {user?.name || user?.email || 'Admin'}
             </span>
-            <Button variant="ghost" size="sm" onClick={handleLogout} className="text-gray-500 hover:text-red-600">
+            <Button variant="ghost" size="sm" onClick={handleLogout} aria-label="Sair do painel" className="text-gray-500 hover:text-red-600">
               <LogOut className="h-4 w-4" />
             </Button>
           </div>
         </header>
 
         {/* Page content */}
-        <main className="p-4 sm:p-6">{children}</main>
+        <main id="main-content" tabIndex={-1} className="p-4 sm:p-6">{children}</main>
       </div>
     </div>
+    </Dialog.Root>
   )
 }

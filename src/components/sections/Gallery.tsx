@@ -1,164 +1,57 @@
-"use client";
+﻿"use client";
 
 import Image from "next/image";
-import { useReveal } from "@/hooks/useReveal";
-import { useCardTilt } from "@/hooks/useCardTilt";
-import { ImageIcon, X, ChevronLeft, ChevronRight, Expand } from "lucide-react";
-import { useState } from "react";
+import * as Dialog from "@radix-ui/react-dialog";
+import { X, ChevronLeft, ChevronRight, Expand } from "lucide-react";
+import { useRef, useState } from "react";
 import type { GalleryImage } from "@/lib/data";
 
-function GalleryItem({ img, idx, onClick }: { img: GalleryImage; idx: number; onClick: () => void }) {
-  const tiltRef = useCardTilt<HTMLElement>();
-
-  return (
-    <button
-      ref={tiltRef}
-      onClick={onClick}
-      data-stagger-child
-      data-cursor="card"
-      data-cursor-label="Abrir"
-      aria-label={`Abrir imagem: ${img.alt}`}
-      className={`${img.span} relative rounded-xl overflow-hidden group cursor-pointer focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/50 focus:ring-offset-2 bg-[var(--color-surface-alt)]`}
-    >
-      <div className="w-full h-full flex items-center justify-center">
-        {/* Gallery image */}
-        {img.src ? (
-          <Image
-            src={img.src}
-            alt={img.alt}
-            fill
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-            className="object-cover transition-transform duration-700 ease-out group-hover:scale-110"
-            loading="lazy"
-          />
-        ) : (
-          <div className="flex flex-col items-center gap-2 text-[var(--color-text-muted)] transition-transform duration-700 ease-out group-hover:scale-110">
-            <ImageIcon className="w-8 h-8 opacity-20 group-hover:opacity-40 transition-opacity duration-500" />
-            <span className="text-xs opacity-30">{img.alt.split(" ").slice(0, 3).join(" ")}</span>
-          </div>
-        )}
-
-        {/* Hover overlay */}
-        <div className="absolute inset-0 bg-[var(--color-primary-dark)]/0 group-hover:bg-[var(--color-primary-dark)]/30 transition-colors duration-500" />
-
-        {/* Expand icon — reveals from center */}
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-10 h-10 rounded-full glass-strong flex items-center justify-center opacity-0 scale-50 group-hover:opacity-100 group-hover:scale-100 transition-all duration-500 ease-out">
-            <Expand className="w-4 h-4 text-white" />
-          </div>
-        </div>
-
-        {/* Border glow on hover */}
-        <div className="absolute inset-0 rounded-xl border border-transparent group-hover:border-white/20 transition-colors duration-500 pointer-events-none" />
-      </div>
-    </button>
-  );
-}
-
-interface GalleryProps {
-  galleryImages: GalleryImage[];
-}
+interface GalleryProps { galleryImages: GalleryImage[]; }
 
 export function Gallery({ galleryImages }: GalleryProps) {
-  const ref = useReveal();
+  const images = galleryImages.filter((image) => image.src.trim());
   const [lightbox, setLightbox] = useState<number | null>(null);
-
-  const close = () => setLightbox(null);
-  const next = () => setLightbox((lightbox! + 1) % galleryImages.length);
-  const prev = () =>
-    setLightbox(
-      (lightbox! - 1 + galleryImages.length) % galleryImages.length
-    );
-
+  const openerRef = useRef<HTMLButtonElement | null>(null);
+  const active = lightbox !== null && images.length ? Math.min(lightbox, images.length - 1) : null;
+  const move = (step: number) => setLightbox((current) => current === null || !images.length ? null : (current + step + images.length) % images.length);
   return (
-    <>
-      <section
-        ref={ref}
-        id="gallery"
-        className="relative section-padding bg-[var(--color-surface)] overflow-hidden"
-      >
-        <div className="blob w-[400px] h-[400px] bg-[var(--color-primary)] top-20 -left-40" />
-
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          {/* Header */}
-          <div className="text-center mb-16">
-            <span className="reveal inline-block text-sm font-semibold text-[var(--color-primary)] tracking-wider uppercase mb-4">
-              Galeria
-            </span>
-            <h2 className="reveal font-serif text-[var(--color-text)] mb-4">
-              <span className="text-mask-line">
-                <span>Momentos que inspiram</span>
-              </span>
-            </h2>
-            <p className="reveal text-base text-[var(--color-text-muted)] max-w-xl mx-auto">
-              Substitua os skeletons por suas fotos reais.
-            </p>
-          </div>
-
-          {/* Masonry Grid */}
-          <div
-            className="grid grid-cols-2 md:grid-cols-4 auto-rows-[200px] md:auto-rows-[220px] gap-3 md:gap-4"
-            data-stagger
-          >
-            {galleryImages.map((img, idx) => (
-              <GalleryItem
-                key={img.id}
-                img={img}
-                idx={idx}
-                onClick={() => setLightbox(idx)}
-              />
+    <section id="gallery" className="section-padding bg-[var(--color-surface)]">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="mb-10 max-w-2xl">
+          <h2 className="mb-4 font-serif">Um olhar sobre o Refúgio</h2>
+          <p className="text-base">Explore as imagens e abra cada foto para ver os detalhes.</p>
+        </div>
+        {images.length === 0 ? <p className="py-8">A galeria está indisponível no momento. <a href="/#booking" className="underline underline-offset-4">Entre em contato</a> para saber mais sobre a pousada.</p> : (
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
+            {images.map((img, idx) => (
+              <button key={img.id} type="button" aria-label={`Ampliar foto ${idx + 1}: ${img.alt || "Galeria da pousada"}`} onClick={(event) => { openerRef.current = event.currentTarget; setLightbox(idx); }} className={`group relative min-h-40 overflow-hidden rounded-lg bg-[var(--color-surface-alt)] aspect-[4/3] ${idx === 0 ? "col-span-2 row-span-2" : ""}`}>
+                <Image src={img.src} alt={img.alt || "Imagem da galeria da pousada"} fill sizes={idx === 0 ? "(max-width: 768px) 100vw, 50vw" : "(max-width: 768px) 50vw, 25vw"} className="object-cover transition-transform duration-500 group-hover:scale-[1.03]" />
+                <span className="absolute right-3 bottom-3 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 text-white"><Expand className="h-4 w-4" aria-hidden="true" /></span>
+              </button>
             ))}
           </div>
-        </div>
-      </section>
-
-      {/* Lightbox */}
-      {lightbox !== null && (
-        <div
-          className="fixed inset-0 z-[60] bg-black/90 backdrop-blur-md flex items-center justify-center p-4"
-          onClick={close}
-          role="dialog"
-          aria-modal="true"
-        >
-          <button
-            onClick={close}
-            className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-colors duration-300"
-            aria-label="Fechar"
-          >
-            <X className="w-5 h-5" />
-          </button>
-          <button
-            onClick={(e) => { e.stopPropagation(); prev(); }}
-            className="absolute left-4 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-colors duration-300"
-            aria-label="Anterior"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          <button
-            onClick={(e) => { e.stopPropagation(); next(); }}
-            className="absolute right-4 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-colors duration-300"
-            aria-label="Próxima"
-          >
-            <ChevronRight className="w-5 h-5" />
-          </button>
-          <div className="flex items-center justify-center w-full max-w-4xl aspect-video rounded-xl bg-[var(--color-surface)]">
-            {galleryImages[lightbox].src ? (
-              <Image
-                src={galleryImages[lightbox].src}
-                alt={galleryImages[lightbox].alt}
-                fill
-                sizes="90vw"
-                className="object-contain rounded-xl"
-              />
-            ) : (
-              <div className="flex flex-col items-center gap-3 text-[var(--color-text-muted)]">
-                <ImageIcon className="w-16 h-16 opacity-30" />
-                <span className="text-sm">{galleryImages[lightbox].alt}</span>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-    </>
+        )}
+      </div>
+      <Dialog.Root open={active !== null} onOpenChange={(open) => { if (!open) setLightbox(null); }}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 z-[70] bg-black/90" />
+          <Dialog.Content data-lenis-prevent aria-describedby={undefined} onCloseAutoFocus={(event) => { event.preventDefault(); openerRef.current?.focus(); }} onKeyDown={(event) => { if (event.key === "ArrowRight") { event.preventDefault(); move(1); } if (event.key === "ArrowLeft") { event.preventDefault(); move(-1); } }} className="fixed inset-x-3 top-1/2 z-[71] mx-auto max-h-[95svh] max-w-6xl -translate-y-1/2 overflow-y-auto rounded-lg bg-black p-3 text-white sm:inset-x-8 sm:p-5">
+            <Dialog.Title className="sr-only">Galeria de fotos — {active === null ? "" : images[active].alt || "Refúgio Mata Atlântica"}</Dialog.Title>
+            <div className="mb-3 flex items-center justify-between gap-4">
+              <p aria-live="polite" aria-atomic="true" className="text-sm text-white/90">{active === null ? "" : `Foto ${active + 1} de ${images.length}`}</p>
+              <Dialog.Close aria-label="Fechar galeria" className="flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20"><X className="h-5 w-5" aria-hidden="true" /></Dialog.Close>
+            </div>
+            <div className="relative h-[min(65svh,700px)] w-full">
+              {active !== null && <Image src={images[active].src} alt={images[active].alt || "Imagem da galeria da pousada"} fill sizes="90vw" className="object-contain" />}
+            </div>
+            <div className="mt-3 flex items-center justify-between gap-4">
+              <button type="button" disabled={images.length < 2} aria-label="Foto anterior" onClick={() => move(-1)} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/10 disabled:opacity-30"><ChevronLeft aria-hidden="true" className="h-5 w-5" /></button>
+              <p className="text-center text-sm text-white/90">{active === null ? "" : images[active].alt}</p>
+              <button type="button" disabled={images.length < 2} aria-label="Próxima foto" onClick={() => move(1)} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/10 disabled:opacity-30"><ChevronRight aria-hidden="true" className="h-5 w-5" /></button>
+            </div>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
+    </section>
   );
 }

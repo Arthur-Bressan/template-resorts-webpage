@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { siteConfig } from "@/data/site"
+import { getSiteConfig } from "@/lib/data"
 import type { Metadata } from "next"
 
 export const metadata: Metadata = {
@@ -7,9 +7,14 @@ export const metadata: Metadata = {
   description: "Termos e condições de uso do site e dos serviços do Refúgio Mata Atlântica.",
 }
 
-export default function TermosDeUso() {
+export const dynamic = 'force-dynamic'
+
+export default async function TermosDeUso() {
+  const { settings: siteConfig } = await getSiteConfig()
   return (
     <main
+      id="main-content"
+      tabIndex={-1}
       className="min-h-screen"
       style={{
         backgroundColor: "var(--color-background)",
@@ -40,7 +45,7 @@ export default function TermosDeUso() {
           className="mb-12 text-sm"
           style={{ color: "var(--color-text-muted)" }}
         >
-          Última atualização: Janeiro de 2025
+          Última atualização do texto: Janeiro de 2025
         </p>
 
         {/* 1. Aceitação dos termos */}
@@ -219,26 +224,26 @@ export default function TermosDeUso() {
               {siteConfig.name}
             </p>
             <p style={{ color: "var(--color-text-muted)" }}>
-              {siteConfig.address}
+              {siteConfig.address || 'Consulte os canais de atendimento disponíveis no site.'}
             </p>
             <p style={{ color: "var(--color-text-muted)" }}>
               E-mail: {" "}
               <a
-                href={`mailto:${siteConfig.email}`}
+                href={siteConfig.email ? `mailto:${siteConfig.email}` : '/#booking'}
                 className="underline"
                 style={{ color: "var(--color-primary)" }}
               >
-                {siteConfig.email}
+                {siteConfig.email || 'Ver opções de contato'}
               </a>
             </p>
             <p style={{ color: "var(--color-text-muted)" }}>
               Telefone: {" "}
               <a
-                href={`tel:${siteConfig.phone}`}
+                href={siteConfig.phone ? `tel:${siteConfig.phone}` : '/#booking'}
                 className="underline"
                 style={{ color: "var(--color-primary)" }}
               >
-                {siteConfig.phone}
+                {siteConfig.phone || 'Ver opções de contato'}
               </a>
             </p>
           </div>

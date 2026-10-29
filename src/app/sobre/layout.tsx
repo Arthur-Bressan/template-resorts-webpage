@@ -1,16 +1,17 @@
 import type { Metadata } from "next";
+import { getSiteConfig, getSocialImageUrl } from "@/lib/data";
 
-export const metadata: Metadata = {
-  title: "Sobre a Pousada — Refúgio Mata Atlântica",
-  description:
-    "Conheça a história, diferenciais e localização do Refúgio Mata Atlântica. 50 hectares de Mata Atlântica preservada em Cunha, SP. Piscina natural, spa, trilhas privativas e café da manhã orgânico.",
-  openGraph: {
-    title: "Sobre a Pousada — Refúgio Mata Atlântica",
-    description:
-      "Conheça a história, diferenciais e localização do Refúgio Mata Atlântica em Cunha, SP.",
-    type: "website",
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { settings } = await getSiteConfig();
+  const title = `Sobre a pousada — ${settings.name}`;
+  const description = settings.metaDescription || settings.description || `Conheça ${settings.name} e planeje sua estadia.`;
+  const image = getSocialImageUrl(settings);
+  return {
+    title, description,
+    openGraph: { title, description, type: "website", images: [{ url: image, alt: settings.name }] },
+    twitter: { card: "summary_large_image", title, description, images: [image] },
+  };
+}
 
 export default function SobreLayout({
   children,

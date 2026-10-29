@@ -32,11 +32,12 @@ export function ConsentCheckbox({
       >
         Concordo com a{" "}
         <a
-          href="#"
-          onClick={(e) => e.preventDefault()}
+          href="/politica-de-privacidade"
+          target="_blank"
+          rel="noopener noreferrer"
           className="underline underline-offset-2 hover:text-[var(--color-primary)] transition-colors"
         >
-          Política de Privacidade
+          Política de Privacidade (abre em nova aba)
         </a>{" "}
         e autorizo o uso dos meus dados para processamento desta reserva, conforme a LGPD.
       </Label>

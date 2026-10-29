@@ -1,186 +1,96 @@
-"use client";
+﻿"use client";
 
 import type { SiteSettings, Stat } from "@/lib/data";
 import { Leaf, Mail, Phone, MapPin } from "lucide-react";
-import { gsap, ScrollTrigger } from "@/components/layout/SmoothScrollProvider";
-import { useEffect } from "react";
+import { useState, type FormEvent } from "react";
 
-function CountUpNumber({ target, suffix }: { target: number; suffix: string }) {
-  useEffect(() => {
-    const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (prefersReduced) return;
-
-    const el = document.getElementById(`stat-${target}-${suffix}`);
-    if (!el) return;
-
-    const obj = { val: 0 };
-
-    gsap.to(obj, {
-      val: target,
-      duration: 2,
-      ease: "power2.out",
-      scrollTrigger: {
-        trigger: el,
-        start: "top 80%",
-        once: true,
-      },
-      onUpdate: () => {
-        el.textContent = Math.round(obj.val) + suffix;
-      },
-    });
-  }, [target, suffix]);
-
-  return (
-    <span id={`stat-${target}-${suffix}`} className="font-serif text-4xl md:text-5xl text-[var(--color-primary)]">
-      0{suffix}
-    </span>
-  );
-}
-
-interface FooterProps {
-  siteSettings: SiteSettings;
-  stats: Stat[];
-}
+interface FooterProps { siteSettings: SiteSettings; stats: Stat[]; }
 
 export function Footer({ siteSettings, stats }: FooterProps) {
+  const [sending, setSending] = useState(false);
+  const [feedback, setFeedback] = useState<{ kind: "success" | "error"; message: string } | null>(null);
+  async function subscribe(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (sending) return;
+    const form = event.currentTarget;
+    const data = new FormData(form);
+    setSending(true);
+    setFeedback(null);
+    try {
+      const response = await fetch("/api/newsletter", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: data.get("email"), consent: data.get("consent") === "on" }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(typeof result.error === "string" ? result.error : "Não foi possível concluir a inscrição. Tente novamente.");
+      setFeedback({ kind: "success", message: "Inscrição registrada. Você poderá receber novidades da pousada." });
+      form.reset();
+    } catch (error) {
+      setFeedback({ kind: "error", message: error instanceof Error ? error.message : "Não foi possível concluir a inscrição. Tente novamente." });
+    } finally {
+      setSending(false);
+    }
+  }
+
   return (
     <footer className="bg-[var(--color-primary-dark)] text-[var(--color-background)]">
-      {/* Stats Bar */}
-      <div className="border-b border-white/10">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {stats.map((stat) => (
-              <div key={stat.label} className="text-center">
-                <CountUpNumber target={stat.value} suffix={stat.suffix} />
-                <p className="mt-2 text-sm text-[var(--color-primary-light)]/70">
-                  {stat.label}
-                </p>
-              </div>
-            ))}
-          </div>
+      {stats.length > 0 && <div className="border-b border-white/15">
+        <div className="mx-auto grid max-w-7xl grid-cols-2 gap-8 px-4 py-10 sm:px-6 md:grid-cols-4 lg:px-8">
+          {stats.map((stat) => <div key={stat.id} className="text-center">
+            <span className="font-serif text-4xl text-[var(--color-secondary-light)]">{stat.value.toLocaleString("pt-BR")}{stat.suffix}</span>
+            <p className="mt-2 text-sm text-white/80">{stat.label}</p>
+          </div>)}
         </div>
-      </div>
-
-      {/* Main Footer */}
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
-          {/* Brand */}
-          <div className="lg:col-span-1">
-            <a href="#" className="flex items-center gap-2.5 mb-4">
-              <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center">
-                <Leaf className="w-5 h-5 text-[var(--color-accent)]" />
+      </div>}
+      <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-4">
+          <div>
+            <a href="/" className="mb-4 flex items-center gap-2.5 text-white hover:text-white"><Leaf className="h-5 w-5 shrink-0 text-[var(--color-accent)]" aria-hidden="true" /><span className="font-serif text-lg font-medium">{siteSettings.name}</span></a>
+            <p className="text-sm leading-relaxed text-white/80">{siteSettings.description.length > 160 ? siteSettings.description.slice(0, 160).trimEnd() + "…" : siteSettings.description}</p>
+          </div>
+          <div>
+            <h2 className="mb-5 font-sans text-sm font-semibold text-white">Navegação</h2>
+            <ul className="space-y-3">
+              {[{ label: "A pousada", href: "/sobre" }, { label: "Acomodações", href: "/#rooms" }, { label: "Experiências", href: "/#experiences" }, { label: "Galeria", href: "/#gallery" }, { label: "Perguntas frequentes", href: "/#faq" }, { label: "Reservar online", href: "/reservas" }].map((link) => <li key={link.href}><a href={link.href} className="inline-block py-1 text-sm text-white/80 hover:text-white">{link.label}</a></li>)}
+            </ul>
+          </div>
+          <div>
+            <h2 className="mb-5 font-sans text-sm font-semibold text-white">Contato</h2>
+            <ul className="space-y-4">
+              {siteSettings.phone && <li><a href={`tel:${siteSettings.phone.replace(/[^+\d]/g, "")}`} className="flex items-center gap-2.5 text-sm text-white/80 hover:text-white"><Phone className="h-4 w-4 shrink-0" aria-hidden="true" />{siteSettings.phone}</a></li>}
+              {siteSettings.email && <li><a href={`mailto:${siteSettings.email}`} className="flex items-start gap-2.5 break-all text-sm text-white/80 hover:text-white"><Mail className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />{siteSettings.email}</a></li>}
+              {siteSettings.address && <li className="flex items-start gap-2.5 text-sm text-white/80"><MapPin className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" /><address className="not-italic">{siteSettings.address}</address></li>}
+            </ul>
+          </div>
+          <div>
+            <h2 className="mb-5 font-sans text-sm font-semibold text-white">Novidades da pousada</h2>
+            <p id="newsletter-description" className="mb-4 text-sm text-white/80">Cadastre seu e-mail para receber novidades.</p>
+            <form onSubmit={subscribe} aria-describedby="newsletter-description" className="space-y-4">
+              <div>
+                <label htmlFor="newsletter-email" className="mb-2 block text-sm text-white">Seu e-mail</label>
+                <input id="newsletter-email" name="email" type="email" autoComplete="email" maxLength={254} required disabled={sending} aria-describedby={feedback?.kind === "error" ? "newsletter-feedback" : undefined} className="min-h-11 w-full min-w-0 rounded-lg border border-white/40 bg-white/10 px-3 py-2.5 text-base text-white disabled:opacity-60" />
               </div>
-              <span className="font-serif text-lg font-medium text-white">
-                {siteSettings.name}
-              </span>
-            </a>
-            <p className="text-sm text-white/60 leading-relaxed">
-              {siteSettings.description.substring(0, 120)}...
-            </p>
-          </div>
-
-          {/* Quick Links */}
-          <div>
-            <h4 className="font-sans font-semibold text-sm uppercase tracking-wider text-white/80 mb-5">
-              Navegação
-            </h4>
-            <ul className="space-y-3">
-              {[
-                { label: "A Pousada", href: "#about" },
-                { label: "Acomodações", href: "#rooms" },
-                { label: "Experiências", href: "#experiences" },
-                { label: "Galeria", href: "#gallery" },
-                { label: "FAQ", href: "#faq" },
-              ].map((link) => (
-                <li key={link.href}>
-                  <a
-                    href={link.href}
-                    className="text-sm text-white/50 hover:text-white transition-colors"
-                  >
-                    {link.label}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Contact */}
-          <div>
-            <h4 className="font-sans font-semibold text-sm uppercase tracking-wider text-white/80 mb-5">
-              Contato
-            </h4>
-            <ul className="space-y-3">
-              <li>
-                <a
-                  href={`tel:${siteSettings.phone}`}
-                  className="flex items-center gap-2.5 text-sm text-white/50 hover:text-white transition-colors"
-                >
-                  <Phone className="w-4 h-4 shrink-0" />
-                  {siteSettings.phone}
-                </a>
-              </li>
-              <li>
-                <a
-                  href={`mailto:${siteSettings.email}`}
-                  className="flex items-center gap-2.5 text-sm text-white/50 hover:text-white transition-colors"
-                >
-                  <Mail className="w-4 h-4 shrink-0" />
-                  {siteSettings.email}
-                </a>
-              </li>
-              <li>
-                <span className="flex items-start gap-2.5 text-sm text-white/50">
-                  <MapPin className="w-4 h-4 shrink-0 mt-0.5" />
-                  {siteSettings.address}
-                </span>
-              </li>
-            </ul>
-          </div>
-
-          {/* Newsletter */}
-          <div>
-            <h4 className="font-sans font-semibold text-sm uppercase tracking-wider text-white/80 mb-5">
-              Newsletter
-            </h4>
-            <p className="text-sm text-white/50 mb-4">
-              Receba novidades, ofertas exclusivas e inspirações para sua próxima viagem.
-            </p>
-            <form className="flex gap-2" onSubmit={(e) => e.preventDefault()}>
-              <input
-                type="email"
-                placeholder="Seu e-mail"
-                className="flex-1 px-4 py-2.5 rounded-full bg-white/10 border border-white/10 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-[var(--color-accent)]/50 transition-colors"
-              />
-              <button
-                type="submit"
-                className="px-5 py-2.5 rounded-full bg-[var(--color-accent)] text-[var(--color-primary-dark)] text-sm font-semibold hover:bg-[var(--color-accent)]/90 transition-colors"
-              >
-                OK
-              </button>
+              <label className="flex items-start gap-2.5 text-sm leading-relaxed text-white/85">
+                <input name="consent" type="checkbox" required disabled={sending} className="mt-1 h-4 w-4 shrink-0 accent-[var(--color-accent)]" />
+                Autorizo o uso do meu e-mail para receber comunicações da pousada.
+              </label>
+              <a href="/politica-de-privacidade" className="inline-block text-sm text-white underline underline-offset-4 hover:text-white">Como tratamos seus dados</a>
+              <button type="submit" disabled={sending} className="flex min-h-11 w-full items-center justify-center rounded-full bg-[var(--color-accent)] px-5 py-2.5 text-sm font-semibold text-[var(--color-primary-dark)] hover:bg-[var(--color-secondary-light)] disabled:cursor-wait disabled:opacity-60">{sending ? "Registrando…" : "Receber novidades"}</button>
+              <p id="newsletter-feedback" role={feedback?.kind === "error" ? "alert" : "status"} aria-live={feedback?.kind === "error" ? "assertive" : "polite"} aria-atomic="true" className="min-h-6 text-sm text-white">{feedback?.message}</p>
             </form>
           </div>
         </div>
       </div>
-
-      {/* Bottom */}
-      <div className="border-t border-white/10">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-xs text-white/40">
-              © {new Date().getFullYear()} {siteSettings.name}. Todos os direitos reservados.
-            </p>
-            <div className="flex items-center gap-6">
-              <a href={siteSettings.instagram} className="text-xs text-white/40 hover:text-white transition-colors">
-                Instagram
-              </a>
-              <a href={siteSettings.facebook} className="text-xs text-white/40 hover:text-white transition-colors">
-                Facebook
-              </a>
-              <a href={siteSettings.tripadvisor} className="text-xs text-white/40 hover:text-white transition-colors">
-                TripAdvisor
-              </a>
-            </div>
-          </div>
+      <div className="border-t border-white/15">
+        <div className="mx-auto flex max-w-7xl flex-col justify-between gap-5 px-4 py-6 sm:px-6 lg:flex-row lg:px-8">
+          <p className="text-xs text-white/75">© {new Date().getFullYear()} {siteSettings.name}. Todos os direitos reservados.</p>
+          <nav aria-label="Informações legais e redes sociais" className="flex flex-wrap gap-x-5 gap-y-3">
+            <a href="/politica-de-privacidade" className="text-xs text-white/80 hover:text-white">Privacidade</a>
+            <a href="/termos-de-uso" className="text-xs text-white/80 hover:text-white">Termos de uso</a>
+            <button type="button" onClick={() => window.dispatchEvent(new CustomEvent("cookie-consent-open"))} className="text-xs text-white/80 hover:text-white">Preferências de cookies</button>
+            {[{ label: "Instagram", href: siteSettings.instagram }, { label: "Facebook", href: siteSettings.facebook }, { label: "TripAdvisor", href: siteSettings.tripadvisor }].filter((link) => /^https?:\/\//.test(link.href)).map((link) => <a key={link.label} href={link.href} className="text-xs text-white/80 hover:text-white">{link.label}</a>)}
+          </nav>
         </div>
       </div>
     </footer>
