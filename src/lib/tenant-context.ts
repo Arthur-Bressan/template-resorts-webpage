@@ -55,19 +55,23 @@ function normalizeRequestHost(value: string | null | undefined): string | null {
 
 /** Resolve a public tenant from a trusted server-side Host value. */
 export async function getTenantFromHost(host: string | null | undefined) {
-  const baseDomain = getPlatformBaseDomain()
   const normalizedHost = normalizeRequestHost(host)
-  if (!baseDomain || !normalizedHost) return null
+  if (!normalizedHost) return null
 
-  const suffix = `.${baseDomain}`
-  if (!normalizedHost.endsWith(suffix)) return null
+  const baseDomain = getPlatformBaseDomain()
+  const suffix = baseDomain ? `.${baseDomain}` : null
+  let slug: string | null = null
 
-  const slug = normalizedHost.slice(0, -suffix.length)
-  if (
-    !isValidTenantSlug(slug)
+  if (suffix && normalizedHost.endsWith(suffix)) {
+    slug = normalizedHost.slice(0, -suffix.length)
+  } else if (
+    process.env.VERCEL_ENV === 'preview' &&
+    normalizedHost.endsWith('.vercel.app')
   ) {
-    return null
+    slug = process.env.PLATFORM_PREVIEW_TENANT_SLUG ?? null
   }
+
+  if (!slug || !isValidTenantSlug(slug)) return null
 
   const tenant = await db.company.findUnique({
     where: { slug },
