@@ -25,7 +25,7 @@ export default async function FalhaPage() {
         </p>
 
         <div className="space-y-3">
-          {settings.phone && <Button
+          <Button
             asChild
             className="w-full h-12 rounded-xl bg-[var(--color-primary)] hover:bg-[var(--color-primary-dark)] text-white font-semibold"
           >
@@ -35,16 +35,18 @@ export default async function FalhaPage() {
             </Link>
           </Button>
 
-          <Button
-            asChild
-            variant="outline"
-            className="w-full h-12 rounded-xl border-[var(--color-border)] text-[var(--color-text)] hover:bg-[var(--color-surface)]"
-          >
-            <a href={`tel:${settings.phone}`}>
-              <Phone className="w-4 h-4 mr-2" />
-              Ligar: {settings.phone}
-            </a>
-          </Button>}
+          {settings.phone && (
+            <Button
+              asChild
+              variant="outline"
+              className="w-full h-12 rounded-xl border-[var(--color-border)] text-[var(--color-text)] hover:bg-[var(--color-surface)]"
+            >
+              <a href={`tel:${settings.phone}`}>
+                <Phone className="w-4 h-4 mr-2" />
+                Ligar: {settings.phone}
+              </a>
+            </Button>
+          )}
 
           {settings.email && <Button
             asChild
