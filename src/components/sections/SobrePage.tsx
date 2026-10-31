@@ -24,7 +24,6 @@ import {
   Phone,
   Mail,
   ImageIcon,
-  Star,
 } from "lucide-react";
 import { gsap } from "@/components/layout/SmoothScrollProvider";
 
@@ -34,7 +33,7 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
 };
 
 /* ─── Breadcrumb Hero ─── */
-function BreadcrumbHero() {
+function BreadcrumbHero({ siteSettings }: { siteSettings: SiteSettings }) {
   const ref = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -78,20 +77,19 @@ function BreadcrumbHero() {
             <li>
               <ChevronRight className="w-3.5 h-3.5" />
             </li>
-            <li className="text-white/90">Sobre a Pousada</li>
+            <li className="text-white/90">Sobre a hospedagem</li>
           </ol>
         </nav>
 
         <h1 className="fade-in font-serif text-white text-4xl md:text-5xl lg:text-6xl leading-tight max-w-3xl">
-          Conheça o Refúgio
+          Conheça {siteSettings.name}
           <br />
           <span className="text-[var(--color-accent)]">
-            Mata Atlântica
+            Sobre a hospedagem
           </span>
         </h1>
         <p className="fade-in mt-4 text-lg text-white/70 max-w-2xl font-sans">
-          50 hectares de Mata Atlântica preservada, 12 anos acolhendo hóspedes e uma
-          filosofia simples: descanso genuíno.
+          {siteSettings.tagline || "Informações sobre os espaços, serviços e localização."}
         </p>
       </div>
     </section>
@@ -117,7 +115,7 @@ function AmenitiesSection({ amenities }: { amenities: AboutAmenity[] }) {
             </span>
           </h2>
           <p className="reveal text-base text-[var(--color-text-muted)] max-w-xl mx-auto">
-            Tudo incluído para que sua experiência seja completa — sem surpresas, sem custo extra.
+            Conheça os serviços e diferenciais disponíveis durante sua estadia.
           </p>
         </div>
 
@@ -126,7 +124,7 @@ function AmenitiesSection({ amenities }: { amenities: AboutAmenity[] }) {
             const Icon = iconMap[item.icon] || Coffee;
             return (
               <div
-                key={item.label}
+                key={item.id}
                 data-stagger-child
                 className="group p-6 rounded-2xl bg-[var(--color-surface)] hover:bg-[var(--color-surface-alt)] transition-colors duration-300 hover:shadow-md"
               >
@@ -151,6 +149,8 @@ function AmenitiesSection({ amenities }: { amenities: AboutAmenity[] }) {
 /* ─── Location ─── */
 function LocationSection({ siteSettings, distances, directions }: { siteSettings: SiteSettings; distances: Distance[]; directions: Direction[] }) {
   const ref = useReveal();
+  const hasCoordinates = siteSettings.lat !== 0 || siteSettings.lng !== 0;
+  const mapQuery = hasCoordinates ? `${siteSettings.lat},${siteSettings.lng}` : siteSettings.address;
 
   return (
     <section ref={ref} id="location" className="section-padding bg-[var(--color-surface)] overflow-hidden">
@@ -163,7 +163,7 @@ function LocationSection({ siteSettings, distances, directions }: { siteSettings
           </span>
           <h2 className="reveal font-serif text-[var(--color-text)] mb-4">
             <span className="text-mask-line">
-              <span>Onde a natureza encontra a serra</span>
+              <span>Como chegar</span>
             </span>
           </h2>
         </div>
@@ -172,18 +172,17 @@ function LocationSection({ siteSettings, distances, directions }: { siteSettings
           {/* Map */}
           <div className="reveal-left">
             <div className="rounded-2xl overflow-hidden shadow-lg bg-[var(--color-background)] aspect-[4/3] flex items-center justify-center">
-              {/* Substitua pelo iframe do Google Maps ou componente customizado */}
-              <div className="flex flex-col items-center gap-3 text-[var(--color-text-muted)]">
+              <div className="flex flex-col items-center gap-3 text-center text-[var(--color-text-muted)]">
                 <ImageIcon className="w-16 h-16 opacity-20" />
-                <span className="text-sm opacity-40">Mapa do Google Maps aqui</span>
-                <a
-                  href={`https://www.google.com/maps/search/?api=1&query=${siteSettings.lat},${siteSettings.lng}`}
+                <span className="text-sm opacity-70">{siteSettings.address || "Endereço ainda não informado."}</span>
+                {mapQuery && <a
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapQuery)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="mt-2 px-5 py-2.5 rounded-full bg-[var(--color-primary)] text-white text-sm font-medium hover:bg-[var(--color-primary-dark)] transition-colors"
                 >
                   Abrir no Maps
-                </a>
+                </a>}
               </div>
             </div>
 
@@ -200,9 +199,9 @@ function LocationSection({ siteSettings, distances, directions }: { siteSettings
                   <p className="text-sm text-[var(--color-text-muted)]">
                     {siteSettings.address}
                   </p>
-                  <p className="text-sm text-[var(--color-text-muted)] mt-1">
-                    {siteSettings.lat}°S, {siteSettings.lng}°O
-                  </p>
+                  {hasCoordinates && <p className="text-sm text-[var(--color-text-muted)] mt-1">
+                    {siteSettings.lat}, {siteSettings.lng}
+                  </p>}
                 </div>
               </div>
             </address>
@@ -211,14 +210,15 @@ function LocationSection({ siteSettings, distances, directions }: { siteSettings
           {/* Distance + Directions */}
           <div>
             {/* Distances */}
+            {distances.length > 0 && <>
             <h3 className="reveal font-serif text-xl text-[var(--color-text)] mb-5 flex items-center gap-2">
               <Clock className="w-5 h-5 text-[var(--color-primary)]" />
-              Distâncias
+              Pontos de interesse próximos
             </h3>
             <div className="mb-10 space-y-2" data-stagger>
               {distances.map((d) => (
                 <div
-                  key={d.place}
+                  key={d.id}
                   data-stagger-child
                   className="flex items-center justify-between p-4 rounded-xl bg-[var(--color-background)] hover:shadow-sm transition-shadow"
                 >
@@ -236,8 +236,10 @@ function LocationSection({ siteSettings, distances, directions }: { siteSettings
                 </div>
               ))}
             </div>
+            </>}
 
             {/* Como Chegar */}
+            {directions.length > 0 && <>
             <h3 className="reveal font-serif text-xl text-[var(--color-text)] mb-5 flex items-center gap-2">
               <Car className="w-5 h-5 text-[var(--color-primary)]" />
               Como Chegar
@@ -247,7 +249,7 @@ function LocationSection({ siteSettings, distances, directions }: { siteSettings
                 const Icon = dir.type === "ônibus" ? Bus : dir.type === "transfer" ? Plane : Car;
                 return (
                   <div
-                    key={dir.city}
+                    key={dir.id}
                     data-stagger-child
                     className="p-5 rounded-xl bg-[var(--color-background)] hover:shadow-sm transition-shadow"
                   >
@@ -267,6 +269,7 @@ function LocationSection({ siteSettings, distances, directions }: { siteSettings
                 );
               })}
             </div>
+            </>}
           </div>
         </div>
       </div>
@@ -286,6 +289,9 @@ function SensorySection({ sensory }: { sensory: SensoryConfig | null }) {
     }
   } catch {
     paragraphs = [];
+  }
+  if (!paragraphs.length) {
+    paragraphs = ["Conheça os espaços, serviços e informações disponíveis para planejar sua estadia."];
   }
 
   return (
@@ -311,7 +317,7 @@ function SensorySection({ sensory }: { sensory: SensoryConfig | null }) {
             </span>
 
             <h2 className="reveal font-serif text-[var(--color-text)] mb-8 text-3xl md:text-4xl leading-tight">
-              {sensory?.title || ""}
+              {sensory?.title || "Uma estadia no seu ritmo"}
             </h2>
 
             <div className="space-y-5">
@@ -322,29 +328,6 @@ function SensorySection({ sensory }: { sensory: SensoryConfig | null }) {
               ))}
             </div>
 
-            {/* Social proof mini */}
-            <div className="reveal mt-8 flex items-center gap-4 p-5 rounded-xl bg-[var(--color-surface)]">
-              <div className="flex -space-x-3">
-                {["MA", "CL", "HR"].map((initials, i) => (
-                  <div
-                    key={i}
-                    className="w-10 h-10 rounded-full border-2 border-[var(--color-background)] bg-[var(--color-primary)] flex items-center justify-center"
-                  >
-                    <span className="text-xs font-semibold text-white">{initials}</span>
-                  </div>
-                ))}
-              </div>
-              <div>
-                <div className="flex gap-0.5 mb-1">
-                  {[1, 2, 3, 4, 5].map((s) => (
-                    <Star key={s} className="w-3.5 h-3.5 text-[var(--color-accent)] fill-[var(--color-accent)]" />
-                  ))}
-                </div>
-                <p className="text-xs text-[var(--color-text-muted)]">
-                  +4.000 hóspedes satisfeitos nos últimos 12 anos
-                </p>
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -379,37 +362,31 @@ function FinalCTA({ siteSettings }: { siteSettings: SiteSettings }) {
         </h2>
 
         <p className="text-lg text-white/70 max-w-2xl mx-auto mb-4">
-          Reserve diretamente conosco e ganhe café da manhã incluso + late check-out grátis.
-          Diárias a partir de R$ 380.
+          Entre em contato para saber mais sobre as acomodações e planejar sua estadia.
         </p>
 
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass mb-8">
-          <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-          <span className="text-sm text-white/80">
-            Últimas unidades disponíveis para o mês que vem
-          </span>
-        </div>
-
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+          {siteSettings.phone &&
           <a
             href={`tel:${siteSettings.phone}`}
             className="inline-flex items-center gap-2.5 px-8 py-4 rounded-full bg-[var(--color-accent)] text-[var(--color-primary-dark)] font-semibold text-base hover:bg-[var(--color-accent)]/90 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 min-w-[220px] justify-center"
           >
             <Phone className="w-4 h-4" />
             Reservar por Telefone
-          </a>
+          </a>}
+          {siteSettings.email &&
           <a
             href={`mailto:${siteSettings.email}?subject=Reserva%20-%20Sobre%20a%20Pousada`}
             className="inline-flex items-center gap-2.5 px-8 py-4 rounded-full bg-white/15 backdrop-blur-sm text-white font-medium text-base border border-white/25 hover:bg-white/25 transition-all min-w-[220px] justify-center"
           >
             <Mail className="w-4 h-4" />
             Enviar E-mail
-          </a>
+          </a>}
         </div>
 
-        <p className="text-sm text-white/40 mt-6">
-          Ou fale pelo WhatsApp: {siteSettings.phone}
-        </p>
+        {siteSettings.whatsapp && <p className="text-sm text-white/40 mt-6">
+          WhatsApp: {siteSettings.whatsapp}
+        </p>}
       </div>
     </section>
   );
@@ -422,36 +399,24 @@ function LodgingSchema({ siteSettings, amenities }: { siteSettings: SiteSettings
     "@type": "LodgingBusiness",
     name: siteSettings.name,
     description: siteSettings.description,
-    url: "https://refugiomataatlantica.com.br",
-    telephone: siteSettings.phone,
-    email: siteSettings.email,
-    address: {
+    ...(siteSettings.phone ? { telephone: siteSettings.phone } : {}),
+    ...(siteSettings.email ? { email: siteSettings.email } : {}),
+    ...(siteSettings.address ? { address: {
       "@type": "PostalAddress",
-      streetAddress: "Estrada da Serra, Km 12",
-      addressLocality: "Cunha",
-      addressRegion: "SP",
-      postalCode: "23980-000",
+      streetAddress: siteSettings.address,
       addressCountry: "BR",
-    },
-    geo: {
+    } } : {}),
+    ...(siteSettings.lat !== 0 || siteSettings.lng !== 0 ? { geo: {
       "@type": "GeoCoordinates",
       latitude: siteSettings.lat,
       longitude: siteSettings.lng,
-    },
-    amenityFeature: amenities.map((a) => ({
+    } } : {}),
+    ...(amenities.length ? { amenityFeature: amenities.map((a) => ({
       "@type": "LocationFeatureSpecification",
       name: a.label,
       description: a.desc,
       value: true,
-    })),
-    starRating: {
-      "@type": "Rating",
-      ratingValue: "5",
-    },
-    priceRange: "R$ 380 - R$ 920 / noite",
-    checkinTime: "15:00",
-    checkoutTime: "12:00",
-    petsAllowed: true,
+    })) } : {}),
   };
 
   return (
@@ -476,8 +441,8 @@ export default function SobrePage({ siteSettings, amenities, distances, directio
   return (
     <>
       <LodgingSchema siteSettings={siteSettings} amenities={amenities} />
-      <BreadcrumbHero />
-      <AmenitiesSection amenities={amenities} />
+      <BreadcrumbHero siteSettings={siteSettings} />
+      {amenities.length > 0 && <AmenitiesSection amenities={amenities} />}
       <LocationSection siteSettings={siteSettings} distances={distances} directions={directions} />
       <SensorySection sensory={sensory} />
       <FinalCTA siteSettings={siteSettings} />

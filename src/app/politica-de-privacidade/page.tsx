@@ -1,13 +1,20 @@
 import Link from "next/link"
-import { siteConfig } from "@/data/site"
 import type { Metadata } from "next"
+import { getPublicTenant, getSiteConfig } from "@/lib/data"
+import { notFound } from "next/navigation"
 
-export const metadata: Metadata = {
-  title: "Política de Privacidade",
-  description: "Política de privacidade e proteção de dados pessoais conforme a LGPD — Refúgio Mata Atlântica.",
+export async function generateMetadata(): Promise<Metadata> {
+  const tenant = await getPublicTenant()
+  if (!tenant) return { title: "Política de Privacidade" }
+  const { settings } = await getSiteConfig(tenant.id, tenant.name)
+  const title = `Política de Privacidade | ${settings.name}`
+  return { title, description: `Política de privacidade e proteção de dados pessoais conforme a LGPD — ${settings.name}.` }
 }
 
-export default function PoliticaDePrivacidade() {
+export default async function PoliticaDePrivacidade() {
+  const tenant = await getPublicTenant()
+  if (!tenant) notFound()
+  const { settings } = await getSiteConfig(tenant.id, tenant.name)
   return (
     <main
       className="min-h-screen"
@@ -49,18 +56,10 @@ export default function PoliticaDePrivacidade() {
             1. Controlador dos Dados
           </h2>
           <p className="leading-relaxed">
-            O controlador dos seus dados pessoais é{" "}
-            <strong>{siteConfig.name}</strong>, com sede na{" "}
-            <strong>{siteConfig.address}</strong>. Para quaisquer questões
-            relacionadas a esta política, entre em contato pelo e-mail{" "}
-            <a
-              href={`mailto:${siteConfig.email}`}
-              className="underline"
-              style={{ color: "var(--color-primary)" }}
-            >
-              {siteConfig.email}
-            </a>
-            .
+            O controlador dos seus dados pessoais é <strong>{settings.name}</strong>
+            {settings.address ? <>, com sede na <strong>{settings.address}</strong></> : ""}. Para quaisquer questões
+            relacionadas a esta política, {settings.email ? <>entre em contato pelo e-mail{" "}
+            <a href={`mailto:${settings.email}`} className="underline" style={{ color: "var(--color-primary)" }}>{settings.email}</a>.</> : "consulte os canais de contato disponibilizados pela hospedagem."}
           </p>
         </article>
 
@@ -243,24 +242,13 @@ export default function PoliticaDePrivacidade() {
             7. Como Exercer Seus Direitos
           </h2>
           <p className="leading-relaxed">
-            Para exercer qualquer dos direitos descritos acima, entre em
-            contato conosco através do e-mail{" "}
-            <a
-              href={`mailto:${siteConfig.email}`}
-              className="underline"
-              style={{ color: "var(--color-primary)" }}
-            >
-              {siteConfig.email}
-            </a>{" "}
-            ou pelo telefone{" "}
-            <a
-              href={`tel:${siteConfig.phone}`}
-              className="underline"
-              style={{ color: "var(--color-primary)" }}
-            >
-              {siteConfig.phone}
-            </a>
-            . As solicitações serão respondidas no prazo de até 15
+            Para exercer qualquer dos direitos descritos acima, entre em contato conosco
+            {settings.email && <> através do e-mail{" "}
+            <a href={`mailto:${settings.email}`} className="underline" style={{ color: "var(--color-primary)" }}>{settings.email}</a></>}
+            {settings.email && settings.phone ? " ou " : ""}
+            {settings.phone && <>pelo telefone{" "}
+            <a href={`tel:${settings.phone}`} className="underline" style={{ color: "var(--color-primary)" }}>{settings.phone}</a></>}
+            {!settings.email && !settings.phone && " pelos canais de contato disponibilizados pela hospedagem"}. As solicitações serão respondidas no prazo de até 15
             (quinze) dias, conforme previsto na LGPD.
           </p>
         </article>
@@ -336,31 +324,31 @@ export default function PoliticaDePrivacidade() {
             }}
           >
             <p className="font-serif text-lg font-medium mb-1">
-              {siteConfig.name}
+              {settings.name}
             </p>
-            <p style={{ color: "var(--color-text-muted)" }}>
-              {siteConfig.address}
-            </p>
-            <p style={{ color: "var(--color-text-muted)" }}>
+            {settings.address && <p style={{ color: "var(--color-text-muted)" }}>
+              {settings.address}
+            </p>}
+            {settings.email && <p style={{ color: "var(--color-text-muted)" }}>
               E-mail: {" "}
               <a
-                href={`mailto:${siteConfig.email}`}
+                href={`mailto:${settings.email}`}
                 className="underline"
                 style={{ color: "var(--color-primary)" }}
               >
-                {siteConfig.email}
+                {settings.email}
               </a>
-            </p>
-            <p style={{ color: "var(--color-text-muted)" }}>
+            </p>}
+            {settings.phone && <p style={{ color: "var(--color-text-muted)" }}>
               Telefone: {" "}
               <a
-                href={`tel:${siteConfig.phone}`}
+                href={`tel:${settings.phone}`}
                 className="underline"
                 style={{ color: "var(--color-primary)" }}
               >
-                {siteConfig.phone}
+                {settings.phone}
               </a>
-            </p>
+            </p>}
           </div>
         </article>
 

@@ -14,6 +14,7 @@ import {
   Settings,
   Mail,
   Inbox,
+  Bell,
   CalendarCheck,
   Menu,
   X,
@@ -37,10 +38,11 @@ const navItems = [
   { label: 'Configurações', href: '/admin/settings', icon: Settings },
   { label: 'Newsletter', href: '/admin/newsletter', icon: Mail },
   { label: 'Contatos', href: '/admin/contacts', icon: Inbox },
+  { label: 'Notificações', href: '/admin/notifications', icon: Bell },
   { label: 'Reservas', href: '/admin/reservations', icon: CalendarCheck },
 ]
 
-function SidebarContent({ pathname, onClose, onLogout }: { pathname: string; onClose: () => void; onLogout: () => void }) {
+function SidebarContent({ pathname, onClose, onLogout, companyName }: { pathname: string; onClose: () => void; onLogout: () => void; companyName: string }) {
   const isActive = (href: string) => {
     if (href === '/admin') return pathname === '/admin'
     return pathname.startsWith(href)
@@ -53,7 +55,7 @@ function SidebarContent({ pathname, onClose, onLogout }: { pathname: string; onC
           <BedDouble className="h-5 w-5 text-white" />
         </div>
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-white">Refúgio Admin</p>
+          <p className="truncate text-sm font-semibold text-white">{companyName}</p>
           <p className="truncate text-xs text-gray-400">Painel de Gestão</p>
         </div>
       </div>
@@ -98,6 +100,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [user, setUser] = useState<Record<string, string> | null>(null)
+  const [companyName, setCompanyName] = useState('Painel da hospedagem')
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -108,7 +111,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
     adminApi.auth.getSession().then((res) => {
       if (res) {
-        setUser(res.user || getAdminUser())
+        setUser(res.admin || getAdminUser())
+        setCompanyName(res.tenant?.name || 'Painel da hospedagem')
       }
       setLoading(false)
     }).catch(() => {
@@ -143,7 +147,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <SidebarContent pathname={pathname} onClose={() => setSidebarOpen(false)} onLogout={handleLogout} />
+        <SidebarContent pathname={pathname} onClose={() => setSidebarOpen(false)} onLogout={handleLogout} companyName={`${companyName} Admin`} />
       </aside>
 
       {/* Main content */}

@@ -1,23 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { requireAdmin } from '@/lib/admin-auth'
+import { companyAdminErrorResponse, requireCompanyAdmin } from '@/lib/admin-auth'
 
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await requireAdmin()
+    const { tenantId } = await requireCompanyAdmin()
     const { id } = await params
-    const item = await db.testimonial.findUnique({ where: { id } })
+    const item = await db.testimonial.findFirst({ where: { id, tenantId } })
     if (!item) {
       return NextResponse.json({ error: 'Depoimento não encontrado' }, { status: 404 })
     }
     return NextResponse.json(item)
   } catch (error) {
-    if (error instanceof Error && error.message === 'Unauthorized') {
-      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
-    }
+    const authResponse = companyAdminErrorResponse(error)
+    if (authResponse) return authResponse
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
   }
 }
@@ -27,14 +26,14 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await requireAdmin()
+    const { tenantId } = await requireCompanyAdmin({ requireWriteAccess: true })
     const { id } = await params
-    await db.testimonial.delete({ where: { id } })
+    const deleted = await db.testimonial.deleteMany({ where: { id, tenantId } })
+    if (!deleted.count) return NextResponse.json({ error: 'Depoimento não encontrado' }, { status: 404 })
     return NextResponse.json({ ok: true })
   } catch (error) {
-    if (error instanceof Error && error.message === 'Unauthorized') {
-      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
-    }
+    const authResponse = companyAdminErrorResponse(error)
+    if (authResponse) return authResponse
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
   }
 }

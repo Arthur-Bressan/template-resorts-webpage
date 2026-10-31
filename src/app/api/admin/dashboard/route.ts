@@ -1,25 +1,26 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { requireAdmin } from '@/lib/admin-auth'
+import { requireCompanyAdmin } from '@/lib/admin-auth'
 
 export async function GET() {
   try {
-    await requireAdmin()
+    const { tenantId } = await requireCompanyAdmin()
     const [rooms, experiences, testimonials, newsletter, contacts, reservations] = await Promise.all([
-      db.room.count({ where: { published: true } }),
-      db.experience.count({ where: { published: true } }),
-      db.testimonial.count({ where: { published: true } }),
-      db.newsletterSubscriber.count(),
-      db.contactSubmission.count(),
-      db.reservation.count(),
+      db.room.count({ where: { tenantId, published: true } }),
+      db.experience.count({ where: { tenantId, published: true } }),
+      db.testimonial.count({ where: { tenantId, published: true } }),
+      db.newsletterSubscriber.count({ where: { tenantId } }),
+      db.contactSubmission.count({ where: { tenantId } }),
+      db.reservation.count({ where: { tenantId } }),
     ])
 
     const [contactsUnread, reservationsPending] = await Promise.all([
-      db.contactSubmission.count({ where: { read: false } }),
-      db.reservation.count({ where: { status: 'pending' } }),
+      db.contactSubmission.count({ where: { tenantId, read: false } }),
+      db.reservation.count({ where: { tenantId, status: 'pending' } }),
     ])
 
     const recentContacts = await db.contactSubmission.findMany({
+      where: { tenantId },
       orderBy: { createdAt: 'desc' },
       take: 5,
     })

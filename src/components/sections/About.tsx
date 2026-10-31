@@ -2,8 +2,9 @@
 
 import { useReveal } from "@/hooks/useReveal";
 import { Leaf, ImageIcon } from "lucide-react";
+import type { SiteSettings } from "@/lib/data";
 
-export function About() {
+export function About({ siteSettings }: { siteSettings: SiteSettings }) {
   const ref = useReveal();
 
   return (
@@ -28,10 +29,10 @@ export function About() {
                 </div>
                 <div>
                   <p className="font-serif text-lg text-[var(--color-text)]">
-                    12 anos
+                    {siteSettings.name}
                   </p>
                   <p className="text-xs text-[var(--color-text-muted)]">
-                    acolhendo hóspedes
+                    Nossa hospedagem
                   </p>
                 </div>
               </div>
@@ -47,36 +48,29 @@ export function About() {
             <h2 className="reveal font-serif text-[var(--color-text)] mb-6">
               <span className="text-mask-line">
                 <span>
-                  Um refúgio nascido do
-                  <span className="text-[var(--color-secondary)]"> amor </span>
-                  pela natureza
+                  Uma hospedagem pensada com
+                  <span className="text-[var(--color-secondary)]"> cuidado </span>
+                  em cada detalhe
                 </span>
               </span>
             </h2>
 
             <div className="space-y-4">
               <p className="reveal text-base leading-relaxed">
-                Em 2012, idealizamos um espaço onde o luxo encontrasse a
-                simplicidade do campo. A partir de uma antiga fazenda de café na
-                Serra da Mantiqueira, nascemos como uma proposta diferente:
-                hospedagem que respeita o tempo da natureza.
+                {siteSettings.description || "Conheça a proposta e os espaços preparados para receber você."}
               </p>
               <p className="reveal text-base leading-relaxed">
-                Hoje, com 8 chalés e suítes integrados à Mata Atlântica, somos
-                referência em turismo sustentável. Cada detalhe — do café da
-                manhã com ingredientes orgânicos da nossa horta às trilhas
-                guiadas por naturalistas — é pensado para que você viva uma
-                experiência autêntica.
+                Encontre informações sobre acomodações, serviços e localização para planejar sua próxima estadia.
               </p>
             </div>
 
             {/* Features mini */}
             <div className="mt-8 grid grid-cols-2 gap-4" data-stagger>
               {[
-                { label: "8 Acomodações", desc: "Entre suítes e chalés" },
-                { label: "50 hectares", desc: "De Mata Atlântica" },
-                { label: "15km de trilhas", desc: "Sinalizadas e guiadas" },
-                { label: "Menu autoral", desc: "Com produtos locais" },
+                { label: "Acomodações", description: "Veja as opções disponíveis" },
+                { label: "Estrutura", description: "Conheça os espaços e serviços" },
+                { label: "Localização", description: "Consulte os dados do endereço" },
+                { label: "Planejamento", description: "Organize sua próxima estadia" },
               ].map((item) => (
                 <div
                   key={item.label}
@@ -87,7 +81,7 @@ export function About() {
                     {item.label}
                   </p>
                   <p className="text-sm text-[var(--color-text-muted)] mt-1">
-                    {item.desc}
+                    {item.description}
                   </p>
                 </div>
               ))}

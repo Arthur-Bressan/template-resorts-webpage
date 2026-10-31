@@ -1,16 +1,14 @@
 import type { Metadata } from "next";
+import { getPublicTenant, getSiteConfig } from "@/lib/data";
 
-export const metadata: Metadata = {
-  title: "Sobre a Pousada — Refúgio Mata Atlântica",
-  description:
-    "Conheça a história, diferenciais e localização do Refúgio Mata Atlântica. 50 hectares de Mata Atlântica preservada em Cunha, SP. Piscina natural, spa, trilhas privativas e café da manhã orgânico.",
-  openGraph: {
-    title: "Sobre a Pousada — Refúgio Mata Atlântica",
-    description:
-      "Conheça a história, diferenciais e localização do Refúgio Mata Atlântica em Cunha, SP.",
-    type: "website",
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const tenant = await getPublicTenant();
+  if (!tenant) return { title: "Sobre a hospedagem" };
+  const { settings } = await getSiteConfig(tenant.id, tenant.name);
+  const title = `Sobre ${settings.name}`;
+  const description = settings.metaDescription || `Conheça ${settings.name} e as informações disponíveis sobre a hospedagem.`;
+  return { title, description, openGraph: { title, description, type: "website" } };
+}
 
 export default function SobreLayout({
   children,

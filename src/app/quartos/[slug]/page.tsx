@@ -2,7 +2,7 @@ import { SmoothScrollProvider } from "@/components/layout/SmoothScrollProvider";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import RoomDetailPage from "@/components/sections/RoomDetailPage";
-import { getSiteConfig, getRoomBySlug, getRooms } from "@/lib/data";
+import { getPublicTenant, getSiteConfig, getRoomBySlug, getRooms } from "@/lib/data";
 import { notFound } from "next/navigation";
 
 // Dynamic rendering — pages are server-rendered on each request (external DB)
@@ -14,11 +14,13 @@ type Props = {
 
 export default async function QuartoPage({ params }: Props) {
   const { slug } = await params;
-  const { settings, links, stats } = await getSiteConfig();
+  const tenant = await getPublicTenant();
+  if (!tenant) return notFound();
+  const { settings, links, stats } = await getSiteConfig(tenant.id, tenant.name);
 
   const [room, allRooms] = await Promise.all([
-    getRoomBySlug(slug),
-    getRooms(),
+    getRoomBySlug(tenant.id, slug),
+    getRooms(tenant.id),
   ]);
 
   if (!room) return notFound();

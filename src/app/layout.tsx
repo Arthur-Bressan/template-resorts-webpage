@@ -4,7 +4,7 @@ import { Fraunces, Nunito_Sans } from "next/font/google";
 import { CustomCursor } from "@/components/layout/CustomCursor";
 import { CookieConsent } from "@/components/layout/CookieConsent";
 import { WhatsAppFloat } from "@/components/ui/WhatsAppFloat";
-import { db } from "@/lib/db";
+import { getPublicTenant, getSiteConfig } from "@/lib/data";
 import "./globals.css";
 
 const fraunces = Fraunces({
@@ -22,45 +22,19 @@ const nunitoSans = Nunito_Sans({
 });
 
 export async function generateMetadata(): Promise<Metadata> {
-  try {
-    const settings = await db.siteSetting.findUnique({ where: { id: 'main' } });
-    const title = settings?.metaTitle || settings?.name || "Refúgio Mata Atlântica";
-    const description = settings?.metaDescription || settings?.description || "Pousada premium na Mata Atlântica";
+  const tenant = await getPublicTenant();
+  const settings = tenant ? (await getSiteConfig(tenant.id, tenant.name)).settings : null;
+  const title = settings?.metaTitle || settings?.name || "Hospedagem";
+  const description = settings?.metaDescription || settings?.description || "Conheça esta hospedagem e suas acomodações.";
 
-    return {
-      title: `${title} — Pousada & Spa`,
-      description,
-      icons: {
-        icon: '/favicon.png',
-      },
-      keywords: [
-        "pousada",
-        "hospedagem",
-        "Mata Atlântica",
-        "natureza",
-        "spa",
-        "eco-hotel",
-        "refúgio",
-        "férias",
-        "trilhas",
-        "gastronomia",
-      ],
-      authors: [{ name: settings?.name || "Refúgio Mata Atlântica" }],
-      openGraph: {
-        title: `${title} — Pousada & Spa`,
-        description,
-        type: "website",
-      },
-    };
-  } catch {
-    return {
-      title: "Refúgio Mata Atlântica — Pousada & Spa",
-      description: "Pousada premium na Mata Atlântica",
-      icons: {
-        icon: '/favicon.png',
-      },
-    };
-  }
+  return {
+    title,
+    description,
+    icons: { icon: '/favicon.png' },
+    keywords: ["hospedagem", "acomodações", "viagem", "descanso"],
+    ...(settings ? { authors: [{ name: settings.name }] } : {}),
+    openGraph: { title, description, type: "website" },
+  };
 }
 
 export default async function RootLayout({
@@ -68,12 +42,8 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  let settings = null;
-  try {
-    settings = await db.siteSetting.findUnique({ where: { id: 'main' } });
-  } catch {
-    // DB unreachable — WhatsAppFloat will be hidden gracefully
-  }
+  const tenant = await getPublicTenant();
+  const settings = tenant ? (await getSiteConfig(tenant.id, tenant.name)).settings : null;
 
   return (
     <html lang="pt-BR" suppressHydrationWarning>
@@ -83,7 +53,7 @@ export default async function RootLayout({
         <CustomCursor />
         {children}
         <CookieConsent />
-        {settings && <WhatsAppFloat siteSettings={settings} />}
+        {settings?.whatsapp && <WhatsAppFloat siteSettings={settings} />}
         <Analytics />
       </body>
     </html>

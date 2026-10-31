@@ -1,28 +1,19 @@
 "use client";
 
 import { useReveal } from "@/hooks/useReveal";
-import type { SiteSettings } from "@/lib/data";
-import { MapPin, Compass, Car, Clock, TreePine, Waves } from "lucide-react";
-
-const nearby = [
-  { icon: TreePine, name: "Parque Estadual da Serra do Mar", distance: "25 min" },
-  { icon: Waves, name: "Cachoeira do Véu da Noiva", distance: "15 min" },
-  { icon: Compass, name: "Centro Histórico de Cunha", distance: "20 min" },
-  { icon: Car, name: "Acesso por Rodovia SP-247", distance: "3h de SP" },
-];
-
-const directions = [
-  { label: "São Paulo", time: "3 horas", route: "Via Dutra → Taubaté → Cunha" },
-  { label: "Rio de Janeiro", time: "3.5 horas", route: "Via Dutra → Volta Redonda → Cunha" },
-  { label: "Campinas", time: "2.5 horas", route: "Rod. Dom Pedro I → Taubaté → Cunha" },
-];
+import type { SiteSettings, Distance, Direction } from "@/lib/data";
+import { MapPin, Compass, Car, Clock } from "lucide-react";
 
 interface LocationProps {
   siteSettings: SiteSettings;
+  distances: Distance[];
+  directions: Direction[];
 }
 
-export function Location({ siteSettings }: LocationProps) {
+export function Location({ siteSettings, distances, directions }: LocationProps) {
   const ref = useReveal();
+  const hasCoordinates = siteSettings.lat !== 0 || siteSettings.lng !== 0;
+  const mapQuery = hasCoordinates ? `${siteSettings.lat},${siteSettings.lng}` : siteSettings.address;
 
   return (
     <section
@@ -40,30 +31,36 @@ export function Location({ siteSettings }: LocationProps) {
           </span>
           <h2 className="reveal font-serif text-[var(--color-text)] mb-4">
             <span className="text-mask-line">
-              <span>No coração da Serra da Mantiqueira</span>
+              <span>Localização e acesso</span>
             </span>
           </h2>
           <p className="reveal text-base text-[var(--color-text-muted)] max-w-xl mx-auto">
-            Localizada em Cunha, na região do Vale do Paraíba, cercada por montanhas e trilhas da Mata Atlântica.
+            {siteSettings.address || "Consulte o endereço da hospedagem para planejar sua chegada."}
           </p>
         </div>
 
         <div className="grid lg:grid-cols-2 gap-10">
           {/* Google Maps Embed */}
           <div className="reveal-left relative rounded-2xl overflow-hidden shadow-lg h-[400px] md:h-[480px]">
-            <iframe
-              src={`https://maps.google.com/maps?q=${siteSettings.lat},${siteSettings.lng}&z=14&output=embed`}
-              className="absolute inset-0 h-full w-full border-0"
-              allowFullScreen
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-              title="Localização da pousada no Google Maps"
-            />
+            {mapQuery ? (
+              <iframe
+                src={`https://maps.google.com/maps?q=${encodeURIComponent(mapQuery)}&z=14&output=embed`}
+                className="absolute inset-0 h-full w-full border-0"
+                allowFullScreen
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                title={`Localização de ${siteSettings.name} no Google Maps`}
+              />
+            ) : (
+              <div className="absolute inset-0 flex items-center justify-center px-6 text-center text-sm text-[var(--color-text-muted)]">
+                Endereço ainda não informado.
+              </div>
+            )}
           </div>
           {/* Google Maps Link Button */}
-          <div className="reveal mt-4">
+          {mapQuery && <div className="reveal mt-4">
             <a
-              href={`https://www.google.com/maps/search/?api=1&query=${siteSettings.lat},${siteSettings.lng}`}
+              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapQuery)}`}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[var(--color-primary)] text-white text-sm font-medium hover:bg-[var(--color-primary-dark)] transition-colors"
@@ -71,7 +68,7 @@ export function Location({ siteSettings }: LocationProps) {
               <MapPin className="w-4 h-4" />
               Abrir no Google Maps
             </a>
-          </div>
+          </div>}
 
           {/* Info */}
           <div>
@@ -81,23 +78,23 @@ export function Location({ siteSettings }: LocationProps) {
                 Pontos de Interesse
               </h3>
               <div className="grid sm:grid-cols-2 gap-3" data-stagger>
-                {nearby.map((item) => (
+                {distances.map((item) => (
                   <div
-                    key={item.name}
+                    key={item.id}
                     data-stagger-child
                     className="p-4 rounded-xl bg-[var(--color-surface)] flex items-start gap-3"
                   >
                     <div className="w-10 h-10 rounded-lg bg-[var(--color-primary)]/10 flex items-center justify-center shrink-0">
-                      <item.icon className="w-5 h-5 text-[var(--color-primary)]" />
+                      <MapPin className="w-5 h-5 text-[var(--color-primary)]" />
                     </div>
                     <div>
                       <p className="text-sm font-medium text-[var(--color-text)]">
-                        {item.name}
+                        {item.place}
                       </p>
                       <div className="flex items-center gap-1 mt-1">
                         <Clock className="w-3 h-3 text-[var(--color-text-muted)]" />
                         <span className="text-xs text-[var(--color-text-muted)]">
-                          {item.distance}
+                          {[item.distance, item.time].filter(Boolean).join(' · ')}
                         </span>
                       </div>
                     </div>
@@ -114,16 +111,16 @@ export function Location({ siteSettings }: LocationProps) {
               <div className="space-y-3" data-stagger>
                 {directions.map((dir) => (
                   <div
-                    key={dir.label}
+                    key={dir.id}
                     data-stagger-child
                     className="p-4 rounded-xl bg-[var(--color-surface)]"
                   >
                     <div className="flex items-center justify-between mb-1">
                       <p className="text-sm font-medium text-[var(--color-text)]">
-                        {dir.label}
+                        {dir.city}
                       </p>
                       <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)]">
-                        {dir.time}
+                        {dir.type}
                       </span>
                     </div>
                     <p className="text-xs text-[var(--color-text-muted)]">

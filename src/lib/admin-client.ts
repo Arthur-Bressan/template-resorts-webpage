@@ -104,15 +104,39 @@ export const adminApi = {
     list: (page?: number) => adminFetch(`/newsletter?page=${page || 1}`),
   },
   contacts: {
-    list: (params?: { page?: number; unread?: boolean }) =>
-      adminFetch(`/contacts?page=${params?.page || 1}${params?.unread ? '&unread=true' : ''}`),
+    list: (params?: { page?: number; unread?: boolean; status?: string }) =>
+      adminFetch(`/contacts?page=${params?.page || 1}${params?.unread ? '&unread=true' : ''}${params?.status ? `&status=${encodeURIComponent(params.status)}` : ''}`),
     markRead: (id: string) => adminFetch('/contacts', { method: 'PUT', body: JSON.stringify({ id, read: true }) }),
+    updateStatus: (id: string, status: string) => adminFetch('/contacts', { method: 'PUT', body: JSON.stringify({ id, status }) }),
+  },
+  notifications: {
+    list: (page = 1, unread?: boolean) => adminFetch(`/notifications?page=${page}${unread ? '&unread=true' : ''}`),
+    markRead: (id: string, read = true) => adminFetch('/notifications', { method: 'PUT', body: JSON.stringify({ id, read }) }),
   },
   reservations: {
-    list: (params?: { page?: number; status?: string }) =>
-      adminFetch(`/reservations?page=${params?.page || 1}${params?.status ? `&status=${params.status}` : ''}`),
-    updateStatus: (id: string, status: string, notes?: string) =>
-      adminFetch('/reservations', { method: 'PUT', body: JSON.stringify({ id, status, notes }) }),
+    list: (params?: { page?: number; status?: string; from?: string; to?: string; limit?: number }) => {
+      const query = new URLSearchParams({ page: String(params?.page || 1), limit: String(params?.limit || 100) })
+      if (params?.status) query.set('status', params.status)
+      if (params?.from) query.set('from', params.from)
+      if (params?.to) query.set('to', params.to)
+      return adminFetch(`/reservations?${query.toString()}`)
+    },
+    createManual: (data: Record<string, unknown>) => adminFetch('/reservations/manual', { method: 'POST', body: JSON.stringify(data) }),
+    confirmManual: (id: string) => adminFetch(`/reservations/${id}/confirm`, { method: 'POST', body: JSON.stringify({}) }),
+    review: (id: string, action: 'confirm' | 'cancel') => adminFetch(`/reservations/${id}/review`, { method: 'POST', body: JSON.stringify({ action }) }),
+    cancel: (id: string, action: 'approve' | 'deny' | 'cancel', itemIds: string[]) =>
+      adminFetch(`/reservations/${id}/cancel`, { method: 'POST', body: JSON.stringify({ action, itemIds }) }),
+    reassign: (id: string, itemId: string, roomUnitId: string) =>
+      adminFetch(`/reservations/${id}/reassign`, { method: 'POST', body: JSON.stringify({ itemId, roomUnitId }) }),
+    updatePeriod: (id: string, data: { checkIn: string; checkOut: string; guests: number }) =>
+      adminFetch(`/reservations/${id}/period`, { method: 'PUT', body: JSON.stringify(data) }),
+    recordRefund: (id: string, itemIds: string[]) =>
+      adminFetch(`/reservations/${id}/refund`, { method: 'POST', body: JSON.stringify({ itemIds }) }),
+    sendManageLink: (id: string) => adminFetch(`/reservations/${id}/manage-link`, { method: 'POST', body: JSON.stringify({}) }),
+  },
+  availabilityBlocks: {
+    create: (roomUnitId: string, data: { checkIn: string; checkOut: string; reason: string }) =>
+      adminFetch(`/room-units/${roomUnitId}/blocks`, { method: 'POST', body: JSON.stringify(data) }),
   },
   upload: async (file: File) => {
     const token = getToken()

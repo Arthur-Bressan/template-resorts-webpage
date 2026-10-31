@@ -32,10 +32,12 @@ export default function NewRoomPage() {
   const [description, setDescription] = useState('')
   const [descriptionLong, setDescriptionLong] = useState('')
   const [policy, setPolicy] = useState('')
+  const [cancellationWindowHours, setCancellationWindowHours] = useState('')
   const [published, setPublished] = useState(true)
   const [sortOrder, setSortOrder] = useState('0')
   const [images, setImages] = useState<Array<{ src: string; alt: string; sortOrder: number }>>([])
   const [amenities, setAmenities] = useState<Array<{ name: string; icon: string; sortOrder: number }>>([])
+  const [units, setUnits] = useState<Array<{ identifier: string; isActive: boolean }>>([{ identifier: '1', isActive: true }])
 
   const handleNameChange = (v: string) => {
     setName(v)
@@ -46,6 +48,14 @@ export default function NewRoomPage() {
   const removeImage = (i: number) => setImages(images.filter((_, idx) => idx !== i))
   const updateImage = (i: number, field: string, value: string) => {
     setImages(images.map((img, idx) => (idx === i ? { ...img, [field]: value } : img)))
+  }
+
+  const addUnit = () => {
+    const nextNumber = units.reduce((max, unit) => Math.max(max, Number.parseInt(unit.identifier, 10) || 0), 0) + 1
+    setUnits([...units, { identifier: String(nextNumber), isActive: true }])
+  }
+  const updateUnit = (i: number, changes: Partial<{ identifier: string; isActive: boolean }>) => {
+    setUnits(units.map((unit, idx) => idx === i ? { ...unit, ...changes } : unit))
   }
 
   const addAmenity = () => setAmenities([...amenities, { name: '', icon: 'Sparkles', sortOrder: amenities.length }])
@@ -61,7 +71,8 @@ export default function NewRoomPage() {
       await adminApi.rooms.create({
         name, slug, price: parseFloat(price) || 0, capacity: parseInt(capacity) || 1,
         size: parseInt(size) || 0, bedType, description, descriptionLong, policy,
-        published, sortOrder: parseInt(sortOrder) || 0, images, amenities,
+        cancellationWindowHours: cancellationWindowHours === '' ? null : Number(cancellationWindowHours),
+        published, sortOrder: parseInt(sortOrder) || 0, images, amenities, units,
       })
       toast.success('Quarto criado!')
       router.push('/admin/rooms')
@@ -79,8 +90,8 @@ export default function NewRoomPage() {
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>
-          <h2 className="text-2xl font-semibold text-gray-900">Novo Quarto</h2>
-          <p className="text-sm text-gray-500">Preencha os dados da acomodação</p>
+          <h2 className="text-2xl font-semibold text-gray-900">Nova categoria</h2>
+          <p className="text-sm text-gray-500">Cadastre a categoria e suas unidades físicas</p>
         </div>
       </div>
 
@@ -100,10 +111,43 @@ export default function NewRoomPage() {
           <div className="space-y-2"><Label>Descrição curta</Label><Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} /></div>
           <div className="space-y-2"><Label>Descrição longa</Label><Textarea value={descriptionLong} onChange={(e) => setDescriptionLong(e.target.value)} rows={6} /></div>
           <div className="space-y-2"><Label>Política</Label><Textarea value={policy} onChange={(e) => setPolicy(e.target.value)} rows={3} /></div>
+          <div className="max-w-md space-y-2">
+            <Label htmlFor="cancellation-window-hours">Prazo para cancelamento direto (horas antes do check-in)</Label>
+            <Input id="cancellation-window-hours" type="number" min="0" max="720" step="1" value={cancellationWindowHours} onChange={(e) => setCancellationWindowHours(e.target.value)} placeholder="Sem prazo configurado" />
+            <p className="text-xs text-gray-500">Deixe vazio para encaminhar todos os pedidos de cancelamento à equipe. O prazo vigente será aplicado no momento do pedido.</p>
+          </div>
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2"><Label>Publicado</Label><Switch checked={published} onCheckedChange={setPublished} /></div>
             <div className="space-y-2"><Label>Ordem</Label><Input type="number" value={sortOrder} onChange={(e) => setSortOrder(e.target.value)} className="w-24" /></div>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card className="border border-gray-200">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle className="text-lg">Unidades físicas</CardTitle>
+            <p className="mt-1 text-sm text-gray-500">Cada unidade pode ser reservada e bloqueada individualmente.</p>
+          </div>
+          <Button type="button" variant="outline" size="sm" onClick={addUnit}><Plus className="mr-1 h-4 w-4" /> Adicionar unidade</Button>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {units.length === 0 && <p className="text-sm text-gray-400">Nenhuma unidade cadastrada</p>}
+          {units.map((unit, i) => (
+            <div key={i} className="flex items-center gap-3 rounded-lg border border-gray-100 p-3">
+              <div className="flex-1 space-y-1">
+                <Label className="text-xs">Identificador</Label>
+                <Input value={unit.identifier} onChange={(e) => updateUnit(i, { identifier: e.target.value })} placeholder="Ex.: Chalé 1" />
+              </div>
+              <div className="flex items-center gap-2 pt-5">
+                <Label className="text-sm">Ativa</Label>
+                <Switch checked={unit.isActive} onCheckedChange={(value) => updateUnit(i, { isActive: value })} />
+              </div>
+              <Button type="button" variant="ghost" size="sm" className="mt-5 text-red-500" onClick={() => setUnits(units.filter((_, idx) => idx !== i))}>
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          ))}
         </CardContent>
       </Card>
 
@@ -155,7 +199,7 @@ export default function NewRoomPage() {
 
       <div className="flex justify-end gap-3">
         <Button variant="outline" onClick={() => router.push('/admin/rooms')}>Cancelar</Button>
-        <Button onClick={handleSave} disabled={saving}>{saving ? 'Salvando...' : 'Criar Quarto'}</Button>
+        <Button onClick={handleSave} disabled={saving}>{saving ? 'Salvando...' : 'Criar categoria'}</Button>
       </div>
     </div>
   )

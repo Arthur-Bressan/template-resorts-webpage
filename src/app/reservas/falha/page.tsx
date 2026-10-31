@@ -1,11 +1,14 @@
-"use client";
-
 import Link from "next/link";
 import { XCircle, ArrowLeft, Phone, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { siteConfig } from "@/data/site";
+import { getPublicTenant, getSiteConfig } from "@/lib/data";
+import { notFound } from "next/navigation";
 
-export default function FalhaPage() {
+export default async function FalhaPage() {
+  const tenant = await getPublicTenant();
+  if (!tenant) notFound();
+  const { settings } = await getSiteConfig(tenant.id, tenant.name);
+  const propertyName = settings.name || tenant.name;
   return (
     <div className="min-h-screen bg-[var(--color-background)] flex items-center justify-center px-4">
       <div className="max-w-md w-full text-center">
@@ -18,11 +21,11 @@ export default function FalhaPage() {
         </h1>
 
         <p className="text-[var(--color-text-muted)] text-lg mb-8">
-          Tente novamente ou entre em contato conosco.
+          O pagamento de {propertyName} não foi concluído. Tente novamente ou entre em contato com a pousada.
         </p>
 
         <div className="space-y-3">
-          <Button
+          {settings.phone && <Button
             asChild
             className="w-full h-12 rounded-xl bg-[var(--color-primary)] hover:bg-[var(--color-primary-dark)] text-white font-semibold"
           >
@@ -37,22 +40,22 @@ export default function FalhaPage() {
             variant="outline"
             className="w-full h-12 rounded-xl border-[var(--color-border)] text-[var(--color-text)] hover:bg-[var(--color-surface)]"
           >
-            <a href={`tel:${siteConfig.phone}`}>
+            <a href={`tel:${settings.phone}`}>
               <Phone className="w-4 h-4 mr-2" />
-              Ligar: {siteConfig.phone}
+              Ligar: {settings.phone}
             </a>
-          </Button>
+          </Button>}
 
-          <Button
+          {settings.email && <Button
             asChild
             variant="ghost"
             className="w-full h-12 rounded-xl text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-surface)]"
           >
-            <a href={`mailto:${siteConfig.email}?subject=Problema%20no%20pagamento`}>
+            <a href={`mailto:${settings.email}?subject=Problema%20no%20pagamento`}>
               <Mail className="w-4 h-4 mr-2" />
               Enviar e-mail
             </a>
-          </Button>
+          </Button>}
         </div>
       </div>
     </div>

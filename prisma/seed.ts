@@ -34,19 +34,68 @@ const prisma = createPrismaClient()
 async function main() {
   console.log('🌱 Seeding database...')
 
-  // ─── ADMIN ───
-  const hashedPassword = await bcrypt.hash('admin123', 12)
-  const admin = await prisma.admin.upsert({
-    where: { email: 'admin@refugio.com' },
+  const refugioTenant = await prisma.company.upsert({
+    where: { slug: 'refugio-mata-atlantica' },
     update: {},
     create: {
-      email: 'admin@refugio.com',
-      name: 'Administrador',
-      password: hashedPassword,
-      role: 'admin',
+      name: 'Refúgio Mata Atlântica',
+      slug: 'refugio-mata-atlantica',
+      status: 'active',
     },
   })
-  console.log(`  ✅ Admin: ${admin.email}`)
+
+  // Do not create a shared default password. Existing admin data is preserved;
+  // a new local Refúgio profile is created only when an operator supplies one.
+  const adminEmail = (process.env.REFUGIO_ADMIN_EMAIL || 'admin@refugio.com').trim().toLowerCase()
+  const refugioPassword = process.env.REFUGIO_ADMIN_PASSWORD
+  if (refugioPassword && (refugioPassword.length < 12 || Buffer.byteLength(refugioPassword, 'utf8') > 72)) {
+    throw new Error('REFUGIO_ADMIN_PASSWORD deve ter entre 12 e 72 bytes')
+  }
+  let refugioAdmin = await prisma.admin.findUnique({ where: { email: adminEmail } })
+  if (!refugioAdmin && refugioPassword) {
+    refugioAdmin = await prisma.admin.create({
+      data: {
+        email: adminEmail,
+        name: 'Administrador',
+        password: await bcrypt.hash(refugioPassword, 12),
+        role: 'admin',
+      },
+    })
+  }
+
+  if (refugioAdmin) {
+    const [adminMemberships, tenantMemberships] = await Promise.all([
+      prisma.companyMembership.findMany({ where: { adminId: refugioAdmin.id }, select: { id: true } }),
+      prisma.companyMembership.findMany({ where: { tenantId: refugioTenant.id }, select: { id: true } }),
+    ])
+    if (adminMemberships.length === 0 && tenantMemberships.length === 0) {
+      await prisma.companyMembership.create({
+        data: { adminId: refugioAdmin.id, tenantId: refugioTenant.id, role: 'admin' },
+      })
+    }
+  }
+
+  // Platform staff are provisioned only from explicit environment credentials.
+  const platformEmail = process.env.PLATFORM_ADMIN_EMAIL?.trim().toLowerCase()
+  const platformPassword = process.env.PLATFORM_ADMIN_PASSWORD
+  if (Boolean(platformEmail) !== Boolean(platformPassword)) {
+    throw new Error('Configure PLATFORM_ADMIN_EMAIL e PLATFORM_ADMIN_PASSWORD juntos')
+  }
+  if (platformEmail && platformPassword) {
+    if (platformPassword.length < 12 || Buffer.byteLength(platformPassword, 'utf8') > 72) {
+      throw new Error('PLATFORM_ADMIN_PASSWORD deve ter entre 12 e 72 bytes')
+    }
+    const existingPlatformAdmin = await prisma.platformAdmin.findUnique({ where: { email: platformEmail } })
+    if (!existingPlatformAdmin) {
+      await prisma.platformAdmin.create({
+        data: {
+          email: platformEmail,
+          name: 'Equipe da plataforma',
+          password: await bcrypt.hash(platformPassword, 12),
+        },
+      })
+    }
+  }
 
   // ─── SITE SETTINGS ───
   const settings = await prisma.siteSetting.upsert({
@@ -54,6 +103,7 @@ async function main() {
     update: {},
     create: {
       id: 'main',
+      tenantId: refugioTenant.id,
       name: 'Refúgio Mata Atlântica',
       tagline: 'Onde a natureza abraça o descanso',
       description:
@@ -466,6 +516,26 @@ async function main() {
     })
   }
   console.log(`  ✅ Stats: ${statsData.length} created`)
+
+  // Attach legacy and newly seeded Refúgio records without changing existing values.
+  await prisma.$transaction([
+    prisma.siteSetting.updateMany({ where: { tenantId: null }, data: { tenantId: refugioTenant.id } }),
+    prisma.navLink.updateMany({ where: { tenantId: null }, data: { tenantId: refugioTenant.id } }),
+    prisma.room.updateMany({ where: { tenantId: null }, data: { tenantId: refugioTenant.id } }),
+    prisma.experience.updateMany({ where: { tenantId: null }, data: { tenantId: refugioTenant.id } }),
+    prisma.galleryImage.updateMany({ where: { tenantId: null }, data: { tenantId: refugioTenant.id } }),
+    prisma.testimonial.updateMany({ where: { tenantId: null }, data: { tenantId: refugioTenant.id } }),
+    prisma.faq.updateMany({ where: { tenantId: null }, data: { tenantId: refugioTenant.id } }),
+    prisma.aboutAmenity.updateMany({ where: { tenantId: null }, data: { tenantId: refugioTenant.id } }),
+    prisma.distance.updateMany({ where: { tenantId: null }, data: { tenantId: refugioTenant.id } }),
+    prisma.direction.updateMany({ where: { tenantId: null }, data: { tenantId: refugioTenant.id } }),
+    prisma.sensoryConfig.updateMany({ where: { tenantId: null }, data: { tenantId: refugioTenant.id } }),
+    prisma.stat.updateMany({ where: { tenantId: null }, data: { tenantId: refugioTenant.id } }),
+    prisma.uploadedImage.updateMany({ where: { tenantId: null }, data: { tenantId: refugioTenant.id } }),
+    prisma.newsletterSubscriber.updateMany({ where: { tenantId: null }, data: { tenantId: refugioTenant.id } }),
+    prisma.contactSubmission.updateMany({ where: { tenantId: null }, data: { tenantId: refugioTenant.id } }),
+    prisma.reservation.updateMany({ where: { tenantId: null }, data: { tenantId: refugioTenant.id } }),
+  ])
 
   console.log('\n🎉 Seed complete!')
 }

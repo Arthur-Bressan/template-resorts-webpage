@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, FormEvent, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   Card,
@@ -43,6 +43,13 @@ interface RoomOption {
   size: number;
   bedType: string;
   description: string;
+  activeUnitCount: number;
+}
+
+interface PublicRoomsResponse {
+  rooms: RoomOption[];
+  checkoutEnabled: boolean;
+  checkoutMode: "mercado_pago" | "development_mock";
 }
 
 function formatBRL(value: number) {
@@ -53,8 +60,12 @@ function formatBRL(value: number) {
 }
 
 function getTodayString() {
-  const d = new Date();
-  return d.toISOString().split("T")[0];
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
 }
 
 export default function ReservasPageWrapper() {
@@ -72,14 +83,15 @@ export default function ReservasPageWrapper() {
 }
 
 function ReservasPage() {
-  const router = useRouter();
   const [rooms, setRooms] = useState<RoomOption[]>([]);
+  const [quantityByRoom, setQuantityByRoom] = useState<Record<string, number>>({});
+  const [checkoutEnabled, setCheckoutEnabled] = useState(false);
+  const [checkoutMode, setCheckoutMode] = useState<PublicRoomsResponse["checkoutMode"]>("mercado_pago");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
   // Form state
-  const [roomId, setRoomId] = useState("");
   const [checkIn, setCheckIn] = useState("");
   const [checkOut, setCheckOut] = useState("");
   const [guests, setGuests] = useState(1);
@@ -93,17 +105,23 @@ function ReservasPage() {
 
   useEffect(() => {
     fetch("/api/rooms/public")
-      .then((r) => r.json())
-      .then((data: RoomOption[]) => {
-        setRooms(data);
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Rooms unavailable");
+        return response.json() as Promise<PublicRoomsResponse>;
+      })
+      .then((data) => {
+        setRooms(data.rooms);
+        setCheckoutEnabled(data.checkoutEnabled);
+        setCheckoutMode(data.checkoutMode);
         // Pre-select room from URL query param
         if (preselectedSlug) {
-          const match = data.find((r) => r.slug === preselectedSlug);
+          const match = data.rooms.find((r) => r.slug === preselectedSlug && r.activeUnitCount > 0);
           if (match) {
-            setRoomId(match.id);
+            setQuantityByRoom({ [match.id]: 1 });
           }
-        } else if (data.length > 0) {
-          setRoomId(data[0].id);
+        } else {
+          const firstAvailable = data.rooms.find((r) => r.activeUnitCount > 0);
+          if (firstAvailable) setQuantityByRoom({ [firstAvailable.id]: 1 });
         }
       })
       .catch(() => setError("Erro ao carregar quartos."))
@@ -118,7 +136,18 @@ function ReservasPage() {
 
   // Reset check-out if it's before check-in (derived, not via effect)
 
-  const selectedRoom = rooms.find((r) => r.id === roomId);
+  const selectedCategories = useMemo(
+    () => rooms.flatMap((room) => {
+      const quantity = quantityByRoom[room.id] || 0;
+      return quantity > 0 ? [{ room, quantity }] : [];
+    }),
+    [rooms, quantityByRoom],
+  );
+
+  const selectedCapacity = useMemo(
+    () => selectedCategories.reduce((total, item) => total + item.room.capacity * item.quantity, 0),
+    [selectedCategories],
+  );
 
   const nights = useMemo(() => {
     if (!checkIn || !checkOut) return 0;
@@ -128,14 +157,27 @@ function ReservasPage() {
   }, [checkIn, checkOut]);
 
   const totalPrice = useMemo(() => {
-    if (!selectedRoom || nights === 0) return 0;
-    return selectedRoom.price * nights;
-  }, [selectedRoom, nights]);
+    if (nights === 0) return 0;
+    return selectedCategories.reduce((total, item) => total + item.room.price * nights * item.quantity, 0);
+  }, [selectedCategories, nights]);
 
   const guestOptions = useMemo(() => {
-    const count = selectedRoom?.capacity || 2;
+    const count = Math.max(1, Math.min(10, selectedCapacity));
     return Array.from({ length: count }, (_, i) => i + 1);
-  }, [selectedRoom]);
+  }, [selectedCapacity]);
+
+  function setRoomQuantity(roomId: string, quantity: number) {
+    setQuantityByRoom((current) => ({ ...current, [roomId]: quantity }));
+    const nextCapacity = rooms.reduce((total, room) => {
+      const selectedQuantity = room.id === roomId ? quantity : currentQuantity(room.id);
+      return total + room.capacity * selectedQuantity;
+    }, 0);
+    setGuests((current) => Math.min(current, Math.max(1, Math.min(10, nextCapacity))));
+
+    function currentQuantity(id: string) {
+      return quantityByRoom[id] || 0;
+    }
+  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -147,7 +189,10 @@ function ReservasPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          roomId,
+          requestedCategories: selectedCategories.map(({ room, quantity }) => ({
+            categoryId: room.id,
+            quantity,
+          })),
           checkIn,
           checkOut,
           guests,
@@ -179,7 +224,8 @@ function ReservasPage() {
   }
 
   const isFormValid =
-    roomId &&
+    checkoutEnabled &&
+    selectedCategories.length > 0 &&
     checkIn &&
     checkOut &&
     nights > 0 &&
@@ -244,27 +290,46 @@ function ReservasPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Room select */}
-                <div className="space-y-2">
-                  <Label htmlFor="room">Quarto</Label>
-                  <Select value={roomId} onValueChange={setRoomId}>
-                    <SelectTrigger id="room" className="w-full">
-                      <SelectValue placeholder="Selecione um quarto" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {rooms.map((room) => (
-                        <SelectItem key={room.id} value={room.id}>
-                          {room.name} — {formatBRL(room.price)}/noite
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {selectedRoom && (
-                    <p className="text-xs text-[var(--color-text-muted)]">
-                      Capacidade: {selectedRoom.capacity} hóspedes ·{" "}
-                      {selectedRoom.size}m² · {selectedRoom.bedType}
+                <div className="space-y-3">
+                  <Label>Quartos e unidades</Label>
+                  <p className="text-xs text-[var(--color-text-muted)]">
+                    Escolha uma ou mais categorias e a quantidade de unidades de cada uma.
+                  </p>
+                  {rooms.length === 0 ? (
+                    <p className="rounded-lg border border-[var(--color-border)] p-4 text-sm text-[var(--color-text-muted)]">
+                      Não há acomodações publicadas disponíveis para reserva.
                     </p>
-                  )}
+                  ) : rooms.map((room) => (
+                    <div key={room.id} className="flex items-center justify-between gap-4 rounded-lg border border-[var(--color-border)] p-3">
+                      <div className="min-w-0">
+                        <p className="font-medium text-[var(--color-text)]">{room.name}</p>
+                        <p className="text-xs text-[var(--color-text-muted)]">
+                          {formatBRL(room.price)}/noite · capacidade para {room.capacity} hóspedes por unidade
+                          {room.activeUnitCount > 0 ? ` · ${room.activeUnitCount} unidades ativas` : " · sem unidades ativas"}
+                        </p>
+                      </div>
+                      <div className="w-24 shrink-0 space-y-1">
+                        <Label htmlFor={`quantity-${room.id}`} className="text-xs">Unidades</Label>
+                        <Input
+                          id={`quantity-${room.id}`}
+                          type="number"
+                          min={0}
+                          max={room.activeUnitCount}
+                          step={1}
+                          value={quantityByRoom[room.id] || 0}
+                          onChange={(event) => {
+                            const value = Number(event.target.value);
+                            const quantity = Number.isSafeInteger(value)
+                              ? Math.max(0, Math.min(room.activeUnitCount, value))
+                              : 0;
+                            setRoomQuantity(room.id, quantity);
+                          }}
+                          disabled={room.activeUnitCount === 0}
+                          aria-label={`Quantidade de unidades de ${room.name}`}
+                        />
+                      </div>
+                    </div>
+                  ))}
                 </div>
 
                 {/* Dates row */}
@@ -299,6 +364,7 @@ function ReservasPage() {
                   <Select
                     value={String(guests)}
                     onValueChange={(v) => setGuests(Number(v))}
+                    disabled={selectedCapacity === 0}
                   >
                     <SelectTrigger id="guests" className="w-full sm:w-48">
                       <SelectValue />
@@ -379,24 +445,19 @@ function ReservasPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {selectedRoom && nights > 0 ? (
+                {selectedCategories.length > 0 && nights > 0 ? (
                   <div className="space-y-3">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-[var(--color-text-muted)]">
-                        {selectedRoom.name}
-                      </span>
-                      <span className="font-medium">
-                        {formatBRL(selectedRoom.price)}/noite
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-[var(--color-text-muted)]">
-                        {nights} {nights === 1 ? "noite" : "noites"}
-                      </span>
-                      <span className="text-[var(--color-text-muted)]">
-                        {formatBRL(totalPrice)}
-                      </span>
-                    </div>
+                    {selectedCategories.map(({ room, quantity }) => (
+                      <div key={room.id} className="flex items-start justify-between gap-4 text-sm">
+                        <span className="text-[var(--color-text-muted)]">
+                          {room.name} · {quantity} {quantity === 1 ? "unidade" : "unidades"}
+                          <span className="block text-xs">
+                            {formatBRL(room.price)} × {nights} {nights === 1 ? "noite" : "noites"} × {quantity}
+                          </span>
+                        </span>
+                        <span className="font-medium">{formatBRL(room.price * nights * quantity)}</span>
+                      </div>
+                    ))}
                     <div className="border-t border-[var(--color-border)] pt-3 flex items-center justify-between">
                       <span className="font-semibold text-[var(--color-text)]">
                         Total
@@ -405,15 +466,10 @@ function ReservasPage() {
                         {formatBRL(totalPrice)}
                       </span>
                     </div>
-                    <p className="text-xs text-[var(--color-text-muted)] text-center pt-1">
-                      {formatBRL(selectedRoom.price)} × {nights}{" "}
-                      {nights === 1 ? "noite" : "noites"} ={" "}
-                      {formatBRL(totalPrice)}
-                    </p>
                   </div>
                 ) : (
                   <p className="text-sm text-[var(--color-text-muted)] text-center py-2">
-                    Selecione um quarto e as datas para ver o total.
+                    Selecione as unidades e as datas para ver o total.
                   </p>
                 )}
               </CardContent>
@@ -432,6 +488,17 @@ function ReservasPage() {
                 </div>
               )}
 
+              {!checkoutEnabled && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+                  O checkout está indisponível até que esta hospedagem conecte sua conta Mercado Pago.
+                </div>
+              )}
+              {checkoutEnabled && checkoutMode === "development_mock" && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+                  Modo simulado de desenvolvimento: nenhuma reserva será confirmada sem um pagamento aprovado.
+                </div>
+              )}
+
               <Button
                 type="submit"
                 disabled={!isFormValid || submitting}
@@ -445,7 +512,7 @@ function ReservasPage() {
                 ) : (
                   <>
                     <ShieldCheck className="w-5 h-5 mr-2" />
-                    Reservar via Mercado Pago
+                    {checkoutMode === "development_mock" ? "Criar reserva de teste" : "Reservar via Mercado Pago"}
                   </>
                 )}
               </Button>

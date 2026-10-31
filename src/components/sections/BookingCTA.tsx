@@ -13,6 +13,8 @@ interface BookingCTAProps {
 }
 
 export function BookingCTA({ siteSettings }: BookingCTAProps) {
+  const whatsappNumber = siteSettings.whatsapp.replace(/\D/g, '');
+
   return (
     <section
       id="booking"
@@ -44,8 +46,7 @@ export function BookingCTA({ siteSettings }: BookingCTAProps) {
           <span className="text-[var(--color-accent)]">grande escapada?</span>
         </h2>
         <p className="text-lg text-white/70 max-w-2xl mx-auto mb-10">
-          Reserve agora e garanta os melhores preços diretamente conosco.
-          Diárias a partir de R$ 380 com café da manhã incluso.
+          Consulte as acomodações disponíveis e planeje sua próxima estadia.
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
@@ -69,7 +70,7 @@ export function BookingCTA({ siteSettings }: BookingCTAProps) {
           </motion.a>
 
           {/* Secondary CTA — Ligar Agora (white bg, dark text) */}
-          <motion.a
+          {siteSettings.phone && <motion.a
             href={`tel:${siteSettings.phone}`}
             whileHover={{
               scale: 1.06,
@@ -85,10 +86,10 @@ export function BookingCTA({ siteSettings }: BookingCTAProps) {
           >
             <Phone className="w-4 h-4" />
             Ligar Agora
-          </motion.a>
+          </motion.a>}
 
           {/* Tertiary CTA — Enviar E-mail (glass/transparent bg) */}
-          <motion.a
+          {siteSettings.email && <motion.a
             href={`mailto:${siteSettings.email}?subject=Reserva`}
             whileHover={{
               scale: 1.06,
@@ -105,12 +106,17 @@ export function BookingCTA({ siteSettings }: BookingCTAProps) {
           >
             <Mail className="w-4 h-4" />
             Enviar E-mail
-          </motion.a>
+          </motion.a>}
         </div>
 
-        <p className="text-sm text-white/50">
-          Ou fale pelo WhatsApp: {siteSettings.phone}
-        </p>
+        {whatsappNumber && <a
+          href={`https://wa.me/${whatsappNumber}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-sm text-white/50 hover:text-white/80"
+        >
+          Fale pelo WhatsApp
+        </a>}
       </div>
     </section>
   );

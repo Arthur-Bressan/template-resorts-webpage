@@ -12,24 +12,111 @@ model Admin {
   id        String   @id @default(cuid())
   email     String   @unique
   name      String
-  password  String
+  password  String?
   role      String   @default("admin")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  memberships CompanyMembership[]
+  invitations AdminInvitation[]
+  mercadoPagoOAuthStates MercadoPagoOAuthState[]
+}
+
+// Platform staff use an independent identity table and session secret.
+model PlatformAdmin {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  password  String
+  isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
+model Company {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  status      String   @default("active")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  memberships CompanyMembership[]
+  invitations AdminInvitation[]
+  siteSetting SiteSetting?
+  navLinks    NavLink[]
+  rooms       Room[]
+  experiences Experience[]
+  galleryImages GalleryImage[]
+  testimonials Testimonial[]
+  faqs        Faq[]
+  aboutAmenities AboutAmenity[]
+  distances   Distance[]
+  directions  Direction[]
+  sensoryConfig SensoryConfig?
+  stats       Stat[]
+  uploadedImages UploadedImage[]
+  newsletterSubscribers NewsletterSubscriber[]
+  contactSubmissions ContactSubmission[]
+  notifications Notification[]
+  reservations Reservation[]
+  roomUnits RoomUnit[]
+  roomCancellationPolicyChanges RoomCancellationPolicyChange[]
+  availabilityBlocks AvailabilityBlock[]
+  reservationItems ReservationItem[]
+  reservationItemCancellationEvents ReservationItemCancellationEvent[]
+  mercadoPagoConnection MercadoPagoConnection?
+  mercadoPagoOAuthStates MercadoPagoOAuthState[]
+  reservationPayments ReservationPayment[]
+  mercadoPagoWebhookEvents MercadoPagoWebhookEvent[]
+  subscription CompanySubscription?
+  subscriptionPayments PlatformSubscriptionPayment[]
+  subscriptionWebhookEvents PlatformSubscriptionWebhookEvent[]
+  platformSubscriptionPreapprovals PlatformSubscriptionPreapproval[]
+}
+
+// The join model supports multiple memberships; the MVP enforces one company
+// per profile and one profile per company in the provisioning transaction.
+model CompanyMembership {
+  id        String   @id @default(cuid())
+  adminId   String
+  tenantId  String
+  role      String   @default("admin")
+  createdAt DateTime @default(now())
+  admin     Admin    @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  tenant    Company  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([adminId, tenantId])
+  @@index([tenantId])
+}
+
+model AdminInvitation {
+  id        String   @id @default(cuid())
+  adminId   String
+  tenantId  String
+  tokenHash String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+  admin     Admin    @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  tenant    Company  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([adminId, usedAt, revokedAt])
+}
+
 // ─── SITE SETTINGS (singleton) ───
 model SiteSetting {
-  id    String @id @default("main")
-  name        String   @default("Refúgio Mata Atlântica")
-  tagline     String   @default("Onde a natureza abraça o descanso")
+  id    String @id @default(cuid())
+  tenantId String? @unique
+  tenant Company? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name        String   @default("Sua hospedagem")
+  tagline     String   @default("Uma hospedagem feita para receber bem")
   description String   @default("")
   phone       String   @default("")
   whatsapp    String   @default("")
   email       String   @default("")
   address     String   @default("")
-  lat         Float    @default(-23.18)
-  lng         Float    @default(-44.92)
+  lat         Float    @default(0)
+  lng         Float    @default(0)
   instagram   String   @default("")
   facebook    String   @default("")
   tripadvisor String   @default("")
@@ -46,6 +133,8 @@ model SiteSetting {
 // ─── NAV LINKS ───
 model NavLink {
   id       String @id @default(cuid())
+  tenantId String?
+  tenant   Company? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   label    String
   href     String
   sortOrder Int   @default(0)
@@ -54,11 +143,14 @@ model NavLink {
 // ─── ROOMS ───
 model Room {
   id              String   @id @default(cuid())
+  tenantId        String?
+  tenant          Company? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   name            String
-  slug            String   @unique
+  slug            String
   price           Float
   capacity        Int
   size            Int
+  cancellationWindowHours Int?
   bedType         String   @default("")
   description     String   @default("")
   descriptionLong String   @default("")
@@ -70,6 +162,59 @@ model Room {
   images    RoomImage[]
   amenities RoomAmenity[]
   reservations Reservation[]
+  units RoomUnit[]
+  reservationItems ReservationItem[]
+  cancellationPolicyChanges RoomCancellationPolicyChange[]
+
+  @@unique([tenantId, slug])
+}
+
+// Cancellation policy edits are versioned because they affect active stays.
+model RoomCancellationPolicyChange {
+  id                  String   @id @default(cuid())
+  tenantId            String
+  tenant              Company  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  roomId              String
+  room                Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  previousWindowHours Int?
+  newWindowHours      Int?
+  changedByAdminId    String
+  createdAt           DateTime @default(now())
+
+  @@index([tenantId, roomId, createdAt])
+}
+
+// A Room is a bookable category; each RoomUnit is a separately assignable
+// physical accommodation within that category.
+model RoomUnit {
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Company  @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  roomId    String
+  room      Room     @relation(fields: [roomId], references: [id], onDelete: Restrict)
+  identifier String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  blocks    AvailabilityBlock[]
+  reservationItems ReservationItem[]
+
+  @@unique([tenantId, roomId, identifier])
+  @@index([tenantId, roomId, isActive])
+}
+
+model AvailabilityBlock {
+  id         String   @id @default(cuid())
+  tenantId   String
+  tenant     Company  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  roomUnitId String
+  roomUnit   RoomUnit @relation(fields: [roomUnitId], references: [id], onDelete: Restrict)
+  checkIn    DateTime
+  checkOut   DateTime
+  reason     String
+  createdAt  DateTime @default(now())
+
+  @@index([tenantId, roomUnitId, checkIn, checkOut])
 }
 
 model RoomImage {
@@ -93,6 +238,8 @@ model RoomAmenity {
 // ─── EXPERIENCES ───
 model Experience {
   id          String   @id @default(cuid())
+  tenantId    String?
+  tenant      Company? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   title       String
   description String
   image       String   @default("")
@@ -107,6 +254,8 @@ model Experience {
 // ─── GALLERY ───
 model GalleryImage {
   id        String   @id @default(cuid())
+  tenantId  String?
+  tenant    Company? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   src       String
   alt       String   @default("")
   span      String   @default("col-span-1 row-span-1")
@@ -119,6 +268,8 @@ model GalleryImage {
 // ─── TESTIMONIALS ───
 model Testimonial {
   id        String   @id @default(cuid())
+  tenantId  String?
+  tenant    Company? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   name      String
   location  String   @default("")
   avatar    String   @default("")
@@ -133,6 +284,8 @@ model Testimonial {
 // ─── FAQ ───
 model Faq {
   id        String   @id @default(cuid())
+  tenantId  String?
+  tenant    Company? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   question  String
   answer    String
   sortOrder Int      @default(0)
@@ -144,6 +297,8 @@ model Faq {
 // ─── ABOUT PAGE ───
 model AboutAmenity {
   id        String @id @default(cuid())
+  tenantId  String?
+  tenant    Company? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   icon      String
   label     String
   desc      String @default("")
@@ -152,6 +307,8 @@ model AboutAmenity {
 
 model Distance {
   id        String @id @default(cuid())
+  tenantId  String?
+  tenant    Company? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   place     String
   distance  String
   time      String
@@ -160,6 +317,8 @@ model Distance {
 
 model Direction {
   id        String @id @default(cuid())
+  tenantId  String?
+  tenant    Company? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   city      String
   route     String
   type      String @default("carro")
@@ -167,7 +326,9 @@ model Direction {
 }
 
 model SensoryConfig {
-  id        String   @id @default("main")
+  id        String   @id @default(cuid())
+  tenantId  String?  @unique
+  tenant    Company? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   title     String @default("")
   paragraphs String @default("[]")
   updatedAt DateTime @updatedAt
@@ -175,6 +336,8 @@ model SensoryConfig {
 
 model Stat {
   id        String @id @default(cuid())
+  tenantId  String?
+  tenant    Company? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   value     Int
   suffix    String @default("")
   label     String
@@ -184,6 +347,8 @@ model Stat {
 // ─── UPLOADED IMAGES (stored in DB) ───
 model UploadedImage {
   id        String   @id @default(cuid())
+  tenantId  String?
+  tenant    Company? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   filename  String
   mimeType  String
   data      String   // base64 encoded image data
@@ -194,25 +359,57 @@ model UploadedImage {
 // ─── FORM SUBMISSIONS ───
 model NewsletterSubscriber {
   id        String   @id @default(cuid())
-  email     String   @unique
+  tenantId  String?
+  tenant    Company? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  email     String
   consent   Boolean  @default(false)
   createdAt DateTime @default(now())
+
+  @@unique([tenantId, email])
+  @@index([tenantId, createdAt])
 }
 
 model ContactSubmission {
   id        String   @id @default(cuid())
+  tenantId  String?
+  tenant    Company? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   name      String
   email     String
   phone     String   @default("")
   message   String
   consent   Boolean  @default(false)
   read      Boolean  @default(false)
+  status    String   @default("new")
+  checkIn   DateTime?
+  checkOut  DateTime?
+  desiredCategoryId String?
+  desiredCategory String?
   createdAt DateTime @default(now())
+
+  @@index([tenantId, status, createdAt])
+}
+
+// Tenant inbox events are deduplicated by (tenantId, eventKey); callers use a
+// stable idempotency key (for example, the source record ID) for each event.
+model Notification {
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Company  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  event     String
+  eventKey  String
+  payload   String
+  readAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@unique([tenantId, eventKey])
+  @@index([tenantId, readAt, createdAt])
 }
 
 // ─── RESERVATIONS ───
 model Reservation {
   id                  String   @id @default(cuid())
+  tenantId            String?
+  tenant              Company? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   guestName           String
   guestEmail          String
   guestPhone          String   @default("")
@@ -223,9 +420,243 @@ model Reservation {
   guests              Int      @default(1)
   totalPrice          Float
   status              String   @default("pending")
+  bookingSource       String   @default("online")
+  manageTokenHash     String?  @unique
   mercadoPagoPaymentId String @default("")
   mercadoPagoStatus   String @default("")
+  mercadoPagoPreferenceId String @default("")
+  paymentReviewRequired Boolean @default(false)
   notes               String   @default("")
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
+  items               ReservationItem[]
+  payments            ReservationPayment[]
+  cancellationEvents  ReservationItemCancellationEvent[]
+}
+
+// Task 4's occupancy link. Immutable line pricing is added in Task 5.
+model ReservationItem {
+  id            String      @id @default(cuid())
+  tenantId      String
+  tenant        Company     @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  reservationId String
+  reservation   Reservation @relation(fields: [reservationId], references: [id], onDelete: Restrict)
+  roomId        String
+  room          Room        @relation(fields: [roomId], references: [id], onDelete: Restrict)
+  roomUnitId    String
+  roomUnit      RoomUnit    @relation(fields: [roomUnitId], references: [id], onDelete: Restrict)
+  checkIn       DateTime
+  checkOut      DateTime
+  holdExpiresAt DateTime
+  unitPricePerNight Float @default(0)
+  totalPrice    Float       @default(0)
+  // Pending rows expire with the reservation hold; confirmed rows remain
+  // occupied until they are explicitly cancelled or expired.
+  status        String      @default("pending")
+  cancellationRequestedAt DateTime?
+  cancellationWindowHoursAtRequest Int?
+  refundStatus  String      @default("none")
+  cancellationEvents ReservationItemCancellationEvent[]
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@unique([reservationId, roomUnitId])
+  @@index([tenantId, roomUnitId, checkIn, checkOut, status])
+  @@index([tenantId, reservationId])
+}
+
+// One ledger row per guest request, staff decision, or manually recorded refund.
+model ReservationItemCancellationEvent {
+  id                String         @id @default(cuid())
+  tenantId          String
+  tenant            Company        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  reservationId     String
+  reservation       Reservation    @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+  reservationItemId String
+  reservationItem   ReservationItem @relation(fields: [reservationItemId], references: [id], onDelete: Cascade)
+  action            String
+  actorType         String
+  policyWindowHours Int?
+  createdAt         DateTime       @default(now())
+
+  @@index([tenantId, reservationId, createdAt])
+  @@index([reservationItemId, createdAt])
+}
+
+// Each lodging connects its own Mercado Pago seller account. Credentials are
+// encrypted by src/lib/mercadopago.ts before they are stored.
+model MercadoPagoConnection {
+  id                    String   @id @default(cuid())
+  tenantId              String   @unique
+  tenant                Company  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  mpUserId              String   @unique
+  accessTokenEncrypted  String
+  refreshTokenEncrypted String
+  expiresAt             DateTime
+  // Request-start marker prevents expired leases from retrying uncertain rotations.
+  refreshLeaseToken       String?
+  refreshLeaseExpiresAt   DateTime?
+  refreshRequestStartedAt DateTime?
+  status                  String   @default("connected")
+  connectedAt             DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  @@index([status, expiresAt])
+}
+
+// One-time OAuth state is bound to the company admin who initiated the flow.
+model MercadoPagoOAuthState {
+  id                     String    @id @default(cuid())
+  tenantId               String
+  tenant                 Company   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  adminId                String
+  admin                  Admin     @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  returnOrigin           String
+  stateHash              String    @unique
+  codeVerifierEncrypted  String
+  expiresAt              DateTime
+  consumedAt             DateTime?
+  createdAt              DateTime  @default(now())
+
+  @@index([tenantId, expiresAt])
+}
+
+// Payment attempts are retained independently so repeated and concurrent
+// Mercado Pago notifications cannot turn one payment into multiple bookings.
+model ReservationPayment {
+  id              String      @id @default(cuid())
+  tenantId        String
+  tenant          Company     @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  reservationId   String
+  reservation     Reservation @relation(fields: [reservationId], references: [id], onDelete: Restrict)
+  paymentId       String
+  preferenceId    String
+  status          String
+  amount          Float
+  currencyId      String
+  reviewRequired  Boolean     @default(false)
+  approvedAt      DateTime?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@unique([tenantId, paymentId])
+  @@index([tenantId, reservationId, status])
+}
+
+// One record per payment/status transition gives webhook delivery an
+// occurrence-specific idempotency key.
+model MercadoPagoWebhookEvent {
+  id              String   @id @default(cuid())
+  tenantId        String
+  tenant          Company  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  providerEventId String
+  paymentId       String
+  status          String
+  receivedAt      DateTime @default(now())
+
+  @@unique([tenantId, providerEventId])
+  @@index([tenantId, receivedAt])
+  @@index([tenantId, paymentId, status])
+}
+
+// The platform's recurring SaaS contract is separate from each property's
+// OAuth connection and lodging payments. Only provider identifiers and
+// billing metadata are stored; raw card data never enters this database.
+model CompanySubscription {
+  id                       String   @id @default(cuid())
+  tenantId                 String   @unique
+  tenant                   Company  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  monthlyAmountCents       Int?
+  trialDays                Int?
+  status                   String   @default("unconfigured")
+  providerPreapprovalId    String?  @unique
+  providerExternalReference String? @unique
+  // Retains the new POST reference when the provider's create outcome is uncertain.
+  checkoutExternalReference String? @unique
+  providerCollectorId      String?
+  providerStatus           String?
+  providerModifiedAt       DateTime?
+  checkoutCreatedAt        DateTime?
+  trialStartedAt           DateTime?
+  trialEndsAt              DateTime?
+  currentPeriodStartedAt   DateTime?
+  currentPeriodEndsAt      DateTime?
+  nextBillingAt            DateTime?
+  delinquentAt             DateTime?
+  graceEndsAt              DateTime?
+  cancelAtPeriodEnd        Boolean  @default(false)
+  canceledAt               DateTime?
+  accessUntilAt            DateTime?
+  lastPaymentAt            DateTime?
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+  payments                 PlatformSubscriptionPayment[]
+  webhookEvents            PlatformSubscriptionWebhookEvent[]
+  preapprovals             PlatformSubscriptionPreapproval[]
+
+  @@index([status, graceEndsAt])
+  @@index([status, trialEndsAt])
+  @@index([status, accessUntilAt])
+}
+
+// Preserve every provider contract ID so delayed invoices remain attributable
+// after CompanySubscription switches to a replacement preapproval.
+model PlatformSubscriptionPreapproval {
+  id                         String              @id @default(cuid())
+  tenantId                   String
+  tenant                     Company             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  subscriptionId             String
+  subscription               CompanySubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  providerPreapprovalId      String              @unique
+  providerExternalReference  String              @unique
+  providerCollectorId        String?
+  createdAt                  DateTime            @default(now())
+  updatedAt                  DateTime            @updatedAt
+
+  @@index([subscriptionId, createdAt])
+}
+
+// Provider invoice history is stored per occurrence, including retry state.
+// It does not contain card details or the provider's raw webhook payload.
+model PlatformSubscriptionPayment {
+  id                    String              @id @default(cuid())
+  tenantId              String
+  tenant                Company             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  subscriptionId        String
+  subscription          CompanySubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  providerInvoiceId     String
+  providerPaymentId     String?
+  status                String
+  summarizedStatus      String?
+  amountCents           Int?
+  currencyId            String
+  retryAttempt          Int?
+  providerModifiedAt    DateTime?
+  debitAt               DateTime?
+  paidAt                DateTime?
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+
+  @@unique([tenantId, providerInvoiceId])
+  @@index([subscriptionId, status, createdAt])
+}
+
+// Target schema: event identity hashes the HMAC-signed manifest, never body.id or body.type.
+// The future migration must drop legacy [topic, providerEventId] uniqueness, namespace
+// any legacy collisions, then enforce providerEventId globally as declared below.
+model PlatformSubscriptionWebhookEvent {
+  id             String              @id @default(cuid())
+  tenantId       String
+  tenant         Company             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  subscriptionId String
+  subscription   CompanySubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  providerEventId String
+  topic          String
+  // Original signed data.id. For `payments` this is the payment ID; invoice ID is
+  // stored separately on PlatformSubscriptionPayment.providerInvoiceId.
+  resourceId     String
+  processedAt    DateTime            @default(now())
+
+  @@unique([providerEventId])
+  @@index([subscriptionId, processedAt])
 }

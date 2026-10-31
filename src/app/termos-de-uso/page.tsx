@@ -1,13 +1,22 @@
 import Link from "next/link"
-import { siteConfig } from "@/data/site"
 import type { Metadata } from "next"
+import { getPublicTenant, getSiteConfig } from "@/lib/data"
+import { notFound } from "next/navigation"
 
-export const metadata: Metadata = {
-  title: "Termos de Uso",
-  description: "Termos e condições de uso do site e dos serviços do Refúgio Mata Atlântica.",
+export async function generateMetadata(): Promise<Metadata> {
+  const tenant = await getPublicTenant()
+  if (!tenant) return { title: "Termos de Uso" }
+  const { settings } = await getSiteConfig(tenant.id, tenant.name)
+  return {
+    title: `Termos de Uso | ${settings.name}`,
+    description: `Termos e condições de uso do site e dos serviços de ${settings.name}.`,
+  }
 }
 
-export default function TermosDeUso() {
+export default async function TermosDeUso() {
+  const tenant = await getPublicTenant()
+  if (!tenant) notFound()
+  const { settings } = await getSiteConfig(tenant.id, tenant.name)
   return (
     <main
       className="min-h-screen"
@@ -29,7 +38,7 @@ export default function TermosDeUso() {
             Termos de Uso
           </h1>
           <p className="mt-4 text-lg opacity-80">
-            Condições gerais para utilização do site e dos serviços oferecidos pela {siteConfig.name}.
+            Condições gerais para utilização do site e dos serviços oferecidos pela {settings.name}.
           </p>
         </div>
       </section>
@@ -49,7 +58,7 @@ export default function TermosDeUso() {
             1. Aceitação dos Termos
           </h2>
           <p className="leading-relaxed">
-            Ao acessar e utilizar o site da <strong>{siteConfig.name}</strong>,
+            Ao acessar e utilizar o site da <strong>{settings.name}</strong>,
             você concorda integralmente com os presentes Termos de Uso. Caso
             não concorde com qualquer disposição aqui contida, solicitamos
             que não utilize o site. O uso continuado do site após
@@ -74,7 +83,7 @@ export default function TermosDeUso() {
             </li>
             <li>
               Não utilizar o site para fins ilegais, fraudulentos ou que
-              possam causar danos a terceiros ou à {siteConfig.name}.
+              possam causar danos a terceiros ou à {settings.name}.
             </li>
             <li>
               Não tentar acessar áreas restritas do site, sistemas ou
@@ -90,7 +99,7 @@ export default function TermosDeUso() {
             </li>
           </ul>
           <p className="mt-4 leading-relaxed">
-            A {siteConfig.name} reserva-se o direito de suspender ou cancelar
+            A {settings.name} reserva-se o direito de suspender ou cancelar
             contas e reservas de usuários que violem estes termos.
           </p>
         </article>
@@ -104,7 +113,7 @@ export default function TermosDeUso() {
             Todo o conteúdo presente neste site — incluindo, mas não se
             limitando a, textos, imagens, fotografias, logotipos, ícones,
             gráficos, vídeos, layout, design, software e demais materiais — é
-            de propriedade exclusiva da {siteConfig.name} ou de seus
+            de propriedade exclusiva da {settings.name} ou de seus
             licenciadores, estando protegido pelas leis brasileiras de
             propriedade intelectual e direitos autorais (Lei nº 9.610/1998).
           </p>
@@ -112,7 +121,7 @@ export default function TermosDeUso() {
             É vedada a reprodução, distribuição, modificação, exibição
             pública, transmissão ou utilização do conteúdo deste site para
             fins comerciais sem autorização prévia e expressa da{" "}
-            {siteConfig.name}.
+            {settings.name}.
           </p>
         </article>
 
@@ -122,7 +131,7 @@ export default function TermosDeUso() {
             4. Limitação de Responsabilidade
           </h2>
           <p className="mb-4 leading-relaxed">
-            A {siteConfig.name} emprega esforços razoáveis para manter as
+            A {settings.name} emprega esforços razoáveis para manter as
             informações do site atualizadas e precisas, porém não garante
             que o conteúdo esteja livre de erros ou inexatidões. Em
             particular:
@@ -139,12 +148,12 @@ export default function TermosDeUso() {
               valor definitivo.
             </li>
             <li>
-              A {siteConfig.name} não se responsabiliza por danos diretos,
+              A {settings.name} não se responsabiliza por danos diretos,
               indiretos, incidentais ou consequenciais decorrentes do uso
               ou da impossibilidade de uso do site.
             </li>
             <li>
-              A {siteConfig.name} não se responsabiliza pelo conteúdo de
+              A {settings.name} não se responsabiliza pelo conteúdo de
               sites de terceiros acessíveis por meio de links disponíveis
               neste site.
             </li>
@@ -160,7 +169,7 @@ export default function TermosDeUso() {
             Este site pode conter links para sites de terceiros, como
             plataformas de reserva, redes sociais e parceiros comerciais.
             Estes links são disponibilizados apenas para conveniência do
-            usuário. A {siteConfig.name} não revisa, controla ou endossa o
+            usuário. A {settings.name} não revisa, controla ou endossa o
             conteúdo de sites de terceiros, e não se responsabiliza por
             suas práticas de privacidade, políticas ou conteúdos. O acesso
             a sites externos é por conta e risco do usuário.
@@ -173,7 +182,7 @@ export default function TermosDeUso() {
             6. Alterações nos Termos
           </h2>
           <p className="leading-relaxed">
-            A {siteConfig.name} reserva-se o direito de modificar estes Termos
+            A {settings.name} reserva-se o direito de modificar estes Termos
             de Uso a qualquer momento, sem aviso prévio. As alterações
             entrarão em vigor imediatamente após a publicação no site.
             Recomendamos que você revise esta página periodicamente para se
@@ -190,8 +199,8 @@ export default function TermosDeUso() {
           <p className="leading-relaxed">
             Estes Termos de Uso são regidos pelas leis da República
             Federativa do Brasil. Qualquer disputa ou controvérsia
-            decorrente do uso deste site será submetida ao foro da Comarca
-            de Cunha, Estado de São Paulo, com renúncia a qualquer outro,
+            decorrente do uso deste site será submetida ao foro competente,
+            conforme a legislação aplicável, com renúncia a qualquer outro,
             por mais privilegiado que seja. Para questões relacionadas à
             proteção de dados pessoais, aplica-se complementarmente a Lei
             Geral de Proteção de Dados (LGPD — Lei nº 13.709/2018) e o
@@ -216,31 +225,31 @@ export default function TermosDeUso() {
             }}
           >
             <p className="font-serif text-lg font-medium mb-1">
-              {siteConfig.name}
+              {settings.name}
             </p>
-            <p style={{ color: "var(--color-text-muted)" }}>
-              {siteConfig.address}
-            </p>
-            <p style={{ color: "var(--color-text-muted)" }}>
+            {settings.address && <p style={{ color: "var(--color-text-muted)" }}>
+              {settings.address}
+            </p>}
+            {settings.email && <p style={{ color: "var(--color-text-muted)" }}>
               E-mail: {" "}
               <a
-                href={`mailto:${siteConfig.email}`}
+                href={`mailto:${settings.email}`}
                 className="underline"
                 style={{ color: "var(--color-primary)" }}
               >
-                {siteConfig.email}
+                {settings.email}
               </a>
-            </p>
-            <p style={{ color: "var(--color-text-muted)" }}>
+            </p>}
+            {settings.phone && <p style={{ color: "var(--color-text-muted)" }}>
               Telefone: {" "}
               <a
-                href={`tel:${siteConfig.phone}`}
+                href={`tel:${settings.phone}`}
                 className="underline"
                 style={{ color: "var(--color-primary)" }}
               >
-                {siteConfig.phone}
+                {settings.phone}
               </a>
-            </p>
+            </p>}
           </div>
         </article>
 

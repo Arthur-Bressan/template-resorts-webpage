@@ -1,0 +1,13 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "crons": [
+    {
+      "path": "/api/jobs/expire-pending-reservations",
+      "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/jobs/process-overdue-subscriptions",
+      "schedule": "* * * * *"
+    }
+  ]
+}

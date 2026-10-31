@@ -142,11 +142,11 @@ export function Rooms({ rooms }: RoomsProps) {
           </span>
           <h2 className="reveal font-serif text-[var(--color-text)] mb-4">
             <span className="text-mask-line">
-              <span>Encontre seu refúgio</span>
+              <span>Encontre sua acomodação</span>
             </span>
           </h2>
           <p className="reveal text-base text-[var(--color-text-muted)] max-w-xl mx-auto">
-            Cada suíte e chalé foi pensado para integrar conforto e natureza.
+            Conheça as acomodações disponíveis e escolha a opção ideal para sua estadia.
           </p>
         </div>
 

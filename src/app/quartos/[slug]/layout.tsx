@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getRoomBySlug, getRooms } from "@/lib/data";
+import { getPublicTenant, getSiteConfig, getRoomBySlug } from "@/lib/data";
 
 
 type Props = {
@@ -9,30 +9,25 @@ type Props = {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   try {
     const { slug } = await params;
-    const room = await getRoomBySlug(slug);
-    if (!room) return { title: "Acomodação não encontrada" };
+    const tenant = await getPublicTenant();
+    if (!tenant) return { title: "Acomodação" };
+    const [{ settings }, room] = await Promise.all([
+      getSiteConfig(tenant.id, tenant.name),
+      getRoomBySlug(tenant.id, slug),
+    ]);
+    if (!room) return { title: `Acomodação não encontrada | ${settings.name}` };
 
     return {
-      title: `${room.name} — ${room.bedType} | ${room.size}m²`,
+      title: `${room.name} — ${room.bedType} | ${settings.name}`,
       description: room.description,
       openGraph: {
-        title: `${room.name} — Refúgio Mata Atlântica`,
+        title: `${room.name} — ${settings.name}`,
         description: room.description,
         type: "website",
       },
     };
   } catch {
-    return { title: "Acomodação — Refúgio Mata Atlântica" };
-  }
-}
-
-export async function generateStaticParams() {
-  try {
-    const rooms = await getRooms();
-    return rooms.map((room) => ({ slug: room.slug }));
-  } catch {
-    // If DB is unreachable during build, return empty — pages will be generated on demand
-    return [];
+    return { title: "Acomodação" };
   }
 }
 

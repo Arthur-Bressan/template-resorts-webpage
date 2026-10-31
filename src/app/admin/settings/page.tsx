@@ -9,9 +9,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { ImageUpload } from '@/components/admin/ImageUpload'
-import { adminApi } from '@/lib/admin-client'
+import { adminApi, getToken } from '@/lib/admin-client'
 import { toast } from 'sonner'
-import { Upload, X, ImageIcon } from 'lucide-react'
+import { Upload, X, ImageIcon, CheckCircle2, Link2, Loader2 } from 'lucide-react'
 
 // ─── Hero Image Upload (large banner preview) ───
 function HeroImageUpload({ value, onChange }: { value: string; onChange: (url: string) => void }) {
@@ -62,7 +62,7 @@ function HeroImageUpload({ value, onChange }: { value: string; onChange: (url: s
             <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/20" />
             <div className="absolute bottom-3 left-3">
               <span className="inline-flex items-center gap-1 rounded-full bg-white/20 backdrop-blur-sm px-3 py-1 text-xs text-white">
-                Mata Atlântica — Cunha, SP
+                Prévia da imagem principal
               </span>
             </div>
             <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -147,8 +147,8 @@ interface SiteSettings {
 }
 
 const defaults: SiteSettings = {
-  id: 'main', name: '', tagline: '', description: '', phone: '', whatsapp: '',
-  email: '', address: '', lat: -23.18, lng: -44.92, instagram: '', facebook: '',
+  id: '', name: '', tagline: '', description: '', phone: '', whatsapp: '',
+  email: '', address: '', lat: 0, lng: 0, instagram: '', facebook: '',
   tripadvisor: '', logo: '', heroImage: '', ogImage: '', metaTitle: '', metaDescription: '',
   googleAnalyticsId: '', googleMapsApiKey: '',
 }
@@ -157,12 +157,38 @@ export default function SettingsPage() {
   const [data, setData] = useState<SiteSettings>(defaults)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [mercadoPagoStatus, setMercadoPagoStatus] = useState<{
+    connected: boolean
+    status: string
+    accountHint?: string | null
+    developmentMockEnabled?: boolean
+  } | null>(null)
+  const [connectingMercadoPago, setConnectingMercadoPago] = useState(false)
 
   useEffect(() => {
     adminApi.settings.get()
       .then((res) => { if (res) setData(res) })
       .catch(() => toast.error('Erro ao carregar'))
       .finally(() => setLoading(false))
+
+    const token = getToken()
+    if (!token) return
+    fetch('/api/admin/mercadopago/status', {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: 'no-store',
+    })
+      .then(async (response) => {
+        if (!response.ok) throw new Error('Mercado Pago status unavailable')
+        return response.json()
+      })
+      .then(setMercadoPagoStatus)
+      .catch(() => setMercadoPagoStatus(null))
+
+    const callbackResult = new URLSearchParams(window.location.search).get('mercadoPago')
+    if (callbackResult === 'connected') toast.success('Conta Mercado Pago conectada.')
+    if (callbackResult === 'cancelled') toast.info('Conexão Mercado Pago cancelada.')
+    if (callbackResult === 'error') toast.error('Não foi possível conectar a conta Mercado Pago.')
+    if (callbackResult) window.history.replaceState(null, '', window.location.pathname)
   }, [])
 
   const handleSave = async () => {
@@ -176,6 +202,30 @@ export default function SettingsPage() {
 
   const set = (field: keyof SiteSettings, value: string | number) => setData({ ...data, [field]: value })
 
+  const handleMercadoPagoConnect = async () => {
+    const token = getToken()
+    if (!token) {
+      toast.error('Faça login novamente para conectar o Mercado Pago.')
+      return
+    }
+    setConnectingMercadoPago(true)
+    try {
+      const response = await fetch('/api/admin/mercadopago/connect', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        cache: 'no-store',
+      })
+      const result = await response.json()
+      if (!response.ok || typeof result.authorizationUrl !== 'string') {
+        throw new Error('Mercado Pago connection unavailable')
+      }
+      window.location.assign(result.authorizationUrl)
+    } catch {
+      toast.error('Não foi possível iniciar a conexão com o Mercado Pago.')
+      setConnectingMercadoPago(false)
+    }
+  }
+
   if (loading) {
     return <div className="flex h-64 items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-gray-900" /></div>
   }
@@ -186,6 +236,48 @@ export default function SettingsPage() {
         <h2 className="text-2xl font-semibold text-gray-900">Configurações</h2>
         <p className="text-sm text-gray-500">Configurações gerais do site</p>
       </div>
+
+      <Card className="border border-gray-200">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Link2 className="h-5 w-5" /> Pagamentos online
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="font-medium text-gray-900">Mercado Pago da hospedagem</p>
+            <p className="mt-1 text-sm text-gray-500">
+              {mercadoPagoStatus?.connected
+                ? `Conta conectada${mercadoPagoStatus.accountHint ? ` (${mercadoPagoStatus.accountHint})` : ''}.`
+                : mercadoPagoStatus
+                  ? mercadoPagoStatus.status === 'reauthorization_required'
+                    ? 'A autorização do Mercado Pago precisa ser renovada. Reconecte a conta para voltar a receber pagamentos.'
+                    : 'Conecte a conta que receberá os pagamentos das reservas.'
+                  : 'O status da conexão não está disponível.'}
+            </p>
+            {mercadoPagoStatus?.developmentMockEnabled && (
+              <p className="mt-1 text-xs text-amber-700">
+                Modo simulado de desenvolvimento ativo; pagamentos simulados não confirmam reservas.
+              </p>
+            )}
+          </div>
+          <div className="flex items-center gap-3">
+            {mercadoPagoStatus?.connected && (
+              <span className="inline-flex items-center gap-1 text-sm text-emerald-700">
+                <CheckCircle2 className="h-4 w-4" /> Conectada
+              </span>
+            )}
+            <Button type="button" onClick={handleMercadoPagoConnect} disabled={connectingMercadoPago}>
+              {connectingMercadoPago ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              {connectingMercadoPago
+                ? 'Conectando...'
+                : (mercadoPagoStatus?.connected || mercadoPagoStatus?.status === 'reauthorization_required')
+                  ? 'Reconectar conta'
+                  : 'Conectar conta'}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       <Tabs defaultValue="basic">
         <TabsList className="grid w-full grid-cols-5">

@@ -4,6 +4,7 @@
   "private": true,
   "description": "Template whitelabel para pousadas — Next.js + GSAP + Lenis",
   "scripts": {
+    "predev": "npm run db:generate",
     "dev": "next dev -p 3000",
     "build": "next build",
     "start": "next start",

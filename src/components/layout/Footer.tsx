@@ -3,7 +3,7 @@
 import type { SiteSettings, Stat } from "@/lib/data";
 import { Leaf, Mail, Phone, MapPin } from "lucide-react";
 import { gsap, ScrollTrigger } from "@/components/layout/SmoothScrollProvider";
-import { useEffect } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 
 function CountUpNumber({ target, suffix }: { target: number; suffix: string }) {
   useEffect(() => {
@@ -43,6 +43,39 @@ interface FooterProps {
 }
 
 export function Footer({ siteSettings, stats }: FooterProps) {
+  const [newsletterSubmitting, setNewsletterSubmitting] = useState(false)
+  const [newsletterStatus, setNewsletterStatus] = useState('')
+
+  async function submitNewsletter(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (newsletterSubmitting) return
+
+    const form = event.currentTarget
+    const formData = new FormData(form)
+    setNewsletterSubmitting(true)
+    setNewsletterStatus('')
+
+    try {
+      const response = await fetch('/api/newsletter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: formData.get('email'),
+          consent: formData.get('consent') === 'on',
+        }),
+      })
+      const result = await response.json().catch(() => ({}))
+      if (!response.ok) throw new Error(result.error || 'Não foi possível concluir a inscrição.')
+
+      form.reset()
+      setNewsletterStatus('Inscrição confirmada.')
+    } catch (error) {
+      setNewsletterStatus(error instanceof Error ? error.message : 'Não foi possível concluir a inscrição.')
+    } finally {
+      setNewsletterSubmitting(false)
+    }
+  }
+
   return (
     <footer className="bg-[var(--color-primary-dark)] text-[var(--color-background)]">
       {/* Stats Bar */}
@@ -91,6 +124,7 @@ export function Footer({ siteSettings, stats }: FooterProps) {
                 { label: "Experiências", href: "#experiences" },
                 { label: "Galeria", href: "#gallery" },
                 { label: "FAQ", href: "#faq" },
+                { label: "Fale conosco", href: "/#contato" },
               ].map((link) => (
                 <li key={link.href}>
                   <a
@@ -145,19 +179,27 @@ export function Footer({ siteSettings, stats }: FooterProps) {
             <p className="text-sm text-white/50 mb-4">
               Receba novidades, ofertas exclusivas e inspirações para sua próxima viagem.
             </p>
-            <form className="flex gap-2" onSubmit={(e) => e.preventDefault()}>
-              <input
-                type="email"
-                placeholder="Seu e-mail"
-                className="flex-1 px-4 py-2.5 rounded-full bg-white/10 border border-white/10 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-[var(--color-accent)]/50 transition-colors"
-              />
-              <button
-                type="submit"
-                className="px-5 py-2.5 rounded-full bg-[var(--color-accent)] text-[var(--color-primary-dark)] text-sm font-semibold hover:bg-[var(--color-accent)]/90 transition-colors"
-              >
-                OK
-              </button>
+            <form className="space-y-3" onSubmit={submitNewsletter}>
+              <div className="flex gap-2">
+                <input
+                  type="email"
+                  name="email"
+                  placeholder="Seu e-mail"
+                  aria-label="Seu e-mail"
+                  autoComplete="email"
+                  required
+                  className="flex-1 px-4 py-2.5 rounded-full bg-white/10 border border-white/10 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-[var(--color-accent)]/50 transition-colors"
+                />
+                <button type="submit" disabled={newsletterSubmitting} className="px-5 py-2.5 rounded-full bg-[var(--color-accent)] text-[var(--color-primary-dark)] text-sm font-semibold hover:bg-[var(--color-accent)]/90 transition-colors disabled:opacity-60">
+                  {newsletterSubmitting ? '…' : 'OK'}
+                </button>
+              </div>
+              <label className="flex items-start gap-2 text-xs leading-5 text-white/50">
+                <input type="checkbox" name="consent" required className="mt-1 accent-[var(--color-accent)]" />
+                <span>Aceito receber novidades por e-mail da {siteSettings.name}.</span>
+              </label>
             </form>
+            <p role="status" aria-live="polite" className="mt-2 min-h-5 text-xs text-white/70">{newsletterStatus}</p>
           </div>
         </div>
       </div>

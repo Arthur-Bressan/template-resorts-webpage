@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { getTenantFromHost } from '@/lib/tenant-context'
 
 export async function GET(
   _request: NextRequest,
@@ -7,9 +8,13 @@ export async function GET(
 ) {
   try {
     const { id } = await params
+    const tenant = await getTenantFromHost(_request.headers.get('host'))
+    if (!tenant) {
+      return NextResponse.json({ error: 'Imagem não encontrada' }, { status: 404 })
+    }
 
-    const image = await db.uploadedImage.findUnique({
-      where: { id },
+    const image = await db.uploadedImage.findFirst({
+      where: { id, tenantId: tenant.id },
       select: { data: true, mimeType: true, filename: true, size: true },
     })
 

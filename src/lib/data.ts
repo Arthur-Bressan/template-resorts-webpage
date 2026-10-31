@@ -1,4 +1,6 @@
 import { db } from '@/lib/db'
+import { headers } from 'next/headers'
+import { getTenantFromHost } from '@/lib/tenant-context'
 
 // ─── TypeScript Interfaces ───
 
@@ -154,30 +156,32 @@ export interface SensoryConfig {
   updatedAt: Date
 }
 
-// ─── Fallback defaults (used when DB is unreachable) ───
+// ─── Generic template defaults ───
 
-const FALLBACK_SETTINGS: SiteSettings = {
-  id: 'main',
-  name: 'Refúgio Mata Atlântica',
-  tagline: 'Onde a natureza abraça o descanso',
-  description: 'Pousada premium na Mata Atlântica',
-  phone: '',
-  whatsapp: '',
-  email: '',
-  address: '',
-  lat: -23.18,
-  lng: -44.92,
-  instagram: '',
-  facebook: '',
-  tripadvisor: '',
-  logo: '/logo.svg',
-  heroImage: '/images/hero.jpg',
-  ogImage: '/logo.svg',
-  metaTitle: '',
-  metaDescription: '',
-  googleAnalyticsId: '',
-  googleMapsApiKey: '',
-  updatedAt: new Date(),
+export function getDefaultSiteSettings(name: string, id = ''): SiteSettings {
+  return {
+    id,
+    name,
+    tagline: 'Uma hospedagem feita para receber bem',
+    description: 'Conheça uma hospedagem acolhedora, preparada para receber você.',
+    phone: '',
+    whatsapp: '',
+    email: '',
+    address: '',
+    lat: 0,
+    lng: 0,
+    instagram: '',
+    facebook: '',
+    tripadvisor: '',
+    logo: '/logo.svg',
+    heroImage: '/images/hero.jpg',
+    ogImage: '/logo.svg',
+    metaTitle: name,
+    metaDescription: 'Conheça as acomodações e serviços desta hospedagem.',
+    googleAnalyticsId: '',
+    googleMapsApiKey: '',
+    updatedAt: new Date(),
+  }
 }
 
 const FALLBACK_LINKS: NavLink[] = [
@@ -190,23 +194,40 @@ const FALLBACK_LINKS: NavLink[] = [
   { id: 'nav-faq', label: 'FAQ', href: '#faq', sortOrder: 6 },
 ]
 
-// ─── Data Fetching Functions (with error handling) ───
+// ─── Public tenant context ───
 
-export async function getSiteConfig() {
+export async function getPublicTenant() {
   try {
-    const settings = await db.siteSetting.findUnique({ where: { id: 'main' } })
-    const links = await db.navLink.findMany({ orderBy: { sortOrder: 'asc' } })
-    const stats = await db.stat.findMany({ orderBy: { sortOrder: 'asc' } })
-    return { settings: settings || FALLBACK_SETTINGS, links: links.length > 0 ? links : FALLBACK_LINKS, stats }
+    const requestHeaders = await headers()
+    return await getTenantFromHost(requestHeaders.get('host'))
   } catch {
-    return { settings: FALLBACK_SETTINGS, links: FALLBACK_LINKS, stats: [] }
+    return null
   }
 }
 
-export async function getRooms(publishedOnly = true) {
+// ─── Tenant-scoped public reads ───
+
+export async function getSiteConfig(tenantId: string, tenantName: string) {
+  try {
+    const [settings, links, stats] = await Promise.all([
+      db.siteSetting.findFirst({ where: { tenantId } }),
+      db.navLink.findMany({ where: { tenantId }, orderBy: { sortOrder: 'asc' } }),
+      db.stat.findMany({ where: { tenantId }, orderBy: { sortOrder: 'asc' } }),
+    ])
+    return {
+      settings: settings || getDefaultSiteSettings(tenantName, tenantId),
+      links: links.length > 0 ? links : FALLBACK_LINKS,
+      stats,
+    }
+  } catch {
+    return { settings: getDefaultSiteSettings(tenantName, tenantId), links: FALLBACK_LINKS, stats: [] }
+  }
+}
+
+export async function getRooms(tenantId: string, publishedOnly = true) {
   try {
     return await db.room.findMany({
-      where: publishedOnly ? { published: true } : undefined,
+      where: { tenantId, ...(publishedOnly ? { published: true } : {}) },
       include: {
         images: { orderBy: { sortOrder: 'asc' } },
         amenities: { orderBy: { sortOrder: 'asc' } },
@@ -218,10 +239,10 @@ export async function getRooms(publishedOnly = true) {
   }
 }
 
-export async function getRoomBySlug(slug: string) {
+export async function getRoomBySlug(tenantId: string, slug: string) {
   try {
-    return await db.room.findUnique({
-      where: { slug },
+    return await db.room.findFirst({
+      where: { tenantId, slug, published: true },
       include: {
         images: { orderBy: { sortOrder: 'asc' } },
         amenities: { orderBy: { sortOrder: 'asc' } },
@@ -232,10 +253,10 @@ export async function getRoomBySlug(slug: string) {
   }
 }
 
-export async function getExperiences(publishedOnly = true) {
+export async function getExperiences(tenantId: string, publishedOnly = true) {
   try {
     return await db.experience.findMany({
-      where: publishedOnly ? { published: true } : undefined,
+      where: { tenantId, ...(publishedOnly ? { published: true } : {}) },
       orderBy: { sortOrder: 'asc' },
     })
   } catch {
@@ -243,10 +264,10 @@ export async function getExperiences(publishedOnly = true) {
   }
 }
 
-export async function getGalleryImages(publishedOnly = true) {
+export async function getGalleryImages(tenantId: string, publishedOnly = true) {
   try {
     return await db.galleryImage.findMany({
-      where: publishedOnly ? { published: true } : undefined,
+      where: { tenantId, ...(publishedOnly ? { published: true } : {}) },
       orderBy: { sortOrder: 'asc' },
     })
   } catch {
@@ -254,10 +275,10 @@ export async function getGalleryImages(publishedOnly = true) {
   }
 }
 
-export async function getTestimonials(publishedOnly = true) {
+export async function getTestimonials(tenantId: string, publishedOnly = true) {
   try {
     return await db.testimonial.findMany({
-      where: publishedOnly ? { published: true } : undefined,
+      where: { tenantId, ...(publishedOnly ? { published: true } : {}) },
       orderBy: { sortOrder: 'asc' },
     })
   } catch {
@@ -265,10 +286,10 @@ export async function getTestimonials(publishedOnly = true) {
   }
 }
 
-export async function getFAQs(publishedOnly = true) {
+export async function getFAQs(tenantId: string, publishedOnly = true) {
   try {
     return await db.faq.findMany({
-      where: publishedOnly ? { published: true } : undefined,
+      where: { tenantId, ...(publishedOnly ? { published: true } : {}) },
       orderBy: { sortOrder: 'asc' },
     })
   } catch {
@@ -276,14 +297,14 @@ export async function getFAQs(publishedOnly = true) {
   }
 }
 
-export async function getAboutData() {
+export async function getAboutData(tenantId: string) {
   try {
     const [amenities, distances, directions, sensory, stats] = await Promise.all([
-      db.aboutAmenity.findMany({ orderBy: { sortOrder: 'asc' } }),
-      db.distance.findMany({ orderBy: { sortOrder: 'asc' } }),
-      db.direction.findMany({ orderBy: { sortOrder: 'asc' } }),
-      db.sensoryConfig.findUnique({ where: { id: 'main' } }),
-      db.stat.findMany({ orderBy: { sortOrder: 'asc' } }),
+      db.aboutAmenity.findMany({ where: { tenantId }, orderBy: { sortOrder: 'asc' } }),
+      db.distance.findMany({ where: { tenantId }, orderBy: { sortOrder: 'asc' } }),
+      db.direction.findMany({ where: { tenantId }, orderBy: { sortOrder: 'asc' } }),
+      db.sensoryConfig.findFirst({ where: { tenantId } }),
+      db.stat.findMany({ where: { tenantId }, orderBy: { sortOrder: 'asc' } }),
     ])
     return { amenities, distances, directions, sensory, stats }
   } catch {

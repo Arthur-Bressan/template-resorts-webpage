@@ -2,15 +2,18 @@ import { SmoothScrollProvider } from "@/components/layout/SmoothScrollProvider";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import SobrePage from "@/components/sections/SobrePage";
-import { getSiteConfig, getAboutData } from "@/lib/data";
+import { getPublicTenant, getSiteConfig, getAboutData } from "@/lib/data";
+import { notFound } from "next/navigation";
 
 // Dynamic rendering — pages are server-rendered on each request (external DB)
 export const dynamic = 'force-dynamic';
 
 export default async function Sobre() {
-  const { settings, links, stats } = await getSiteConfig();
+  const tenant = await getPublicTenant();
+  if (!tenant) notFound();
+  const { settings, links, stats } = await getSiteConfig(tenant.id, tenant.name);
 
-  const { amenities, distances, directions, sensory } = await getAboutData();
+  const { amenities, distances, directions, sensory } = await getAboutData(tenant.id);
 
   return (
     <SmoothScrollProvider>

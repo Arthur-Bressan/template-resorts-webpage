@@ -203,13 +203,13 @@ export function Hero({ siteSettings }: HeroProps) {
         >
           <span className="w-2 h-2 rounded-full bg-[var(--color-accent)] animate-pulse" />
           <span className="text-sm text-white/90 font-medium">
-            Mata Atlântica — Cunha, SP
+            {siteSettings.address || siteSettings.name}
           </span>
         </motion.div>
 
         {/* ─── Headline — Each line with individual stagger ─── */}
         <h1 className="text-white font-serif mb-6 leading-[1.1]">
-          {["Desconecte-se", "do mundo.", "Reconecte-se", "com a natureza."].map(
+          {["Desconecte-se", "do mundo.", "Reconecte-se", "com o seu tempo."].map(
             (text, i) => (
               <span key={i} className="text-mask-line">
                 <motion.span
@@ -233,8 +233,7 @@ export function Hero({ siteSettings }: HeroProps) {
           className="text-lg md:text-xl text-white/80 max-w-2xl mx-auto mb-10 font-sans"
           variants={fadeUp}
         >
-          {siteSettings.tagline} — suítes com vista para a floresta, spa natural,
-          trilhas pela Mata Atlântica e gastronomia que celebra o terroir.
+          {siteSettings.tagline} — acomodações acolhedoras e atendimento cuidadoso para sua próxima estadia.
         </motion.p>
 
         {/* ─── CTA Buttons with Spring Hover + Tap Scale ─── */}

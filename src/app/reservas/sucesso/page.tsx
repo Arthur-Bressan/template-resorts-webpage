@@ -1,78 +1,32 @@
-"use client";
+import Link from 'next/link'
+import { CheckCircle2, Home, Mail } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { getPublicTenant, getSiteConfig } from '@/lib/data'
+import { notFound } from 'next/navigation'
 
-import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { Suspense } from "react";
-import { CheckCircle2, Home, Mail } from "lucide-react";
-import { Button } from "@/components/ui/button";
+type PageProps = { searchParams: Promise<{ reservationId?: string; external_reference?: string }> }
 
-function SucessoContent() {
-  const searchParams = useSearchParams();
-  const reservationId = searchParams.get("reservationId") || searchParams.get("external_reference");
+export default async function SucessoPage({ searchParams }: PageProps) {
+  const tenant = await getPublicTenant()
+  if (!tenant) notFound()
+  const { settings } = await getSiteConfig(tenant.id, tenant.name)
+  const params = await searchParams
+  const reservationId = params.reservationId || params.external_reference
+  const propertyName = settings.name || tenant.name
 
   return (
-    <div className="min-h-screen bg-[var(--color-background)] flex items-center justify-center px-4">
-      <div className="max-w-md w-full text-center">
-        {/* Top bar */}
+    <div className="flex min-h-screen items-center justify-center bg-[var(--color-background)] px-4">
+      <div className="w-full max-w-md text-center">
         <div className="mb-8">
-          <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-6">
-            <CheckCircle2 className="w-10 h-10 text-emerald-600" />
-          </div>
-
-          <h1 className="font-serif text-3xl sm:text-4xl text-[var(--color-text)] font-medium mb-3">
-            Reserva Confirmada!
-          </h1>
-
-          <p className="text-[var(--color-text-muted)] text-lg">
-            Você receberá um e-mail de confirmação em breve.
-          </p>
+          <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100"><CheckCircle2 className="h-10 w-10 text-emerald-600" /></div>
+          <p className="mb-2 text-sm font-medium text-[var(--color-text-muted)]">{propertyName}</p>
+          <h1 className="mb-3 font-serif text-3xl font-medium text-[var(--color-text)] sm:text-4xl">Pagamento recebido</h1>
+          <p className="text-lg text-[var(--color-text-muted)]">Estamos validando seu pagamento. {propertyName} confirmará a reserva após a aprovação do Mercado Pago e enviará o resultado por e-mail.</p>
         </div>
-
-        {/* Reservation ID */}
-        {reservationId && (
-          <div className="bg-[var(--color-surface)]/50 rounded-xl p-4 mb-8 border border-[var(--color-border)]">
-            <p className="text-xs text-[var(--color-text-muted)] mb-1">
-              Número da Reserva
-            </p>
-            <p className="font-mono text-sm font-medium text-[var(--color-text)]">
-              {reservationId}
-            </p>
-          </div>
-        )}
-
-        {/* Info */}
-        <div className="flex items-center justify-center gap-2 text-sm text-[var(--color-text-muted)] mb-8">
-          <Mail className="w-4 h-4" />
-          <span>Confira também sua caixa de spam.</span>
-        </div>
-
-        {/* Actions */}
-        <Button
-          asChild
-          className="h-12 px-8 rounded-xl bg-[var(--color-primary)] hover:bg-[var(--color-primary-dark)] text-white font-semibold"
-        >
-          <Link href="/">
-            <Home className="w-4 h-4 mr-2" />
-            Voltar ao início
-          </Link>
-        </Button>
+        {reservationId && <div className="mb-8 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]/50 p-4"><p className="mb-1 text-xs text-[var(--color-text-muted)]">Número da reserva</p><p className="font-mono text-sm font-medium text-[var(--color-text)]">{reservationId}</p></div>}
+        <div className="mb-8 flex items-center justify-center gap-2 text-sm text-[var(--color-text-muted)]"><Mail className="h-4 w-4" /><span>Confira também sua caixa de spam.</span></div>
+        <Button asChild className="h-12 rounded-xl bg-[var(--color-primary)] px-8 font-semibold text-white hover:bg-[var(--color-primary-dark)]"><Link href="/"><Home className="mr-2 h-4 w-4" />Voltar ao início</Link></Button>
       </div>
     </div>
-  );
-}
-
-export default function SucessoPage() {
-  return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen bg-[var(--color-background)] flex items-center justify-center">
-          <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center">
-            <CheckCircle2 className="w-10 h-10 text-emerald-600" />
-          </div>
-        </div>
-      }
-    >
-      <SucessoContent />
-    </Suspense>
-  );
+  )
 }

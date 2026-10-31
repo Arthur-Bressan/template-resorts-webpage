@@ -29,6 +29,7 @@ interface Room {
   bedType: string
   published: boolean
   images: Array<{ src: string; alt: string }>
+  units: Array<{ id: string; identifier: string; isActive: boolean }>
 }
 
 export default function RoomsListPage() {
@@ -75,14 +76,14 @@ export default function RoomsListPage() {
   }
 
   return (
-    <div className="space-y-6">
+      <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-semibold text-gray-900">Quartos</h2>
-          <p className="text-sm text-gray-500">Gerencie as acomodações</p>
+          <h2 className="text-2xl font-semibold text-gray-900">Categorias</h2>
+          <p className="text-sm text-gray-500">Gerencie categorias e unidades físicas</p>
         </div>
         <Link href="/admin/rooms/new">
-          <Button><Plus className="mr-2 h-4 w-4" /> Novo Quarto</Button>
+          <Button><Plus className="mr-2 h-4 w-4" /> Nova categoria</Button>
         </Link>
       </div>
 
@@ -115,6 +116,7 @@ export default function RoomsListPage() {
                 </div>
                 <p className="mt-1 text-sm text-gray-500">
                   R$ {room.price.toFixed(2)} · {room.capacity} hóspedes · {room.size}m² · {room.bedType}
+                  {' · '}{room.units?.filter((unit) => unit.isActive).length || 0} de {room.units?.length || 0} unidades ativas
                 </p>
               </div>
               <div className="flex items-center gap-2">

@@ -88,7 +88,7 @@ export function Testimonials({ testimonials }: TestimonialsProps) {
             </span>
           </h2>
           <p className="reveal text-base text-[var(--color-text-muted)] max-w-xl mx-auto">
-            Histórias reais de quem viveu o Refúgio e voltou transformado.
+            Experiências compartilhadas por quem já se hospedou conosco.
           </p>
         </div>
 
